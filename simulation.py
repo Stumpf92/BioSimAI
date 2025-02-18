@@ -1,5 +1,7 @@
 import settings
 import threading
+import cProfile
+import pstats
 
 from agent import Agent
 from game import Game
@@ -115,4 +117,13 @@ class Simulation:
 
 
 if __name__ == '__main__':
-    Simulation().train()
+    pr = cProfile.Profile()
+    pr.enable()
+
+    simulation = Simulation()
+    simulation.train()
+
+    pr.disable()
+    results = pstats.Stats(pr).sort_stats(pstats.SortKey.CUMULATIVE)
+    results.print_stats(50)
+    # results.dump_stats("results.prof")

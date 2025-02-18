@@ -7,6 +7,7 @@ import os
 class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
+        #### Interessant ist Flattenlayer , weil multifimensionaler Input Möglich wi
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, output_size)
 
@@ -33,10 +34,13 @@ class QTrainer:
         self.criterion = nn.MSELoss()
 
     def train_step(self, state, action, reward, next_state, done):
+        #state = np.array(state)
         state = torch.tensor(state, dtype=torch.float)
-        # state = torch.from_numpy(state).float()
+        #next_state = np.array(next_state)
         next_state = torch.tensor(next_state, dtype=torch.float)
+        #action = np.array(action)
         action = torch.tensor(action, dtype=torch.long)
+        #reward = np.array(reward)
         reward = torch.tensor(reward, dtype=torch.float)
         # (n, x)
 

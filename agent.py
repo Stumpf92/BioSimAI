@@ -13,6 +13,7 @@ class Agent:
         self.n_games = 0
         self.memory = deque(maxlen=settings.MAX_MEMORY) # popleft()
         self.model = Linear_QNet(8, 256, 8)
+        # self.model = Linear_QNet(8, 256, 8).cuda()
         self.trainer = QTrainer(self.model, lr=settings.LR, gamma=settings.GAMMA)
 
         self.epsilon = 1
