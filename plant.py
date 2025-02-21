@@ -33,9 +33,9 @@ class Plant:
             
 
     def reproduce_check(self):
-        # if self.hp >= self.heritage_stats["reproduction_threshold"]:
-        #     self.hp = random.randint(settings.PLANT_MIN_STARTING_HEALTH_POINTS, settings.PLANT_MAX_STARTING_HEALTH_POINTS)
-        #     Plant(self.game, self.pos, self.heritage_stats)
+        if self.hp >= self.heritage_stats["reproduction_threshold"]:
+            self.hp = random.randint(settings.PLANT_MIN_STARTING_HEALTH_POINTS, settings.PLANT_MAX_STARTING_HEALTH_POINTS)
+            Plant(self.game, self.pos, self.heritage_stats)
         pass
     
     def kill_check(self):

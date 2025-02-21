@@ -26,9 +26,27 @@ class Prey:
             self.game.prey_list.append(self)
 
     def regular_action(self): 
+        self.detect_nearest_target(Plant)
         self.eat()       
         self.reproduce_check()
         self.kill_check()
+        pass
+
+    def detect_nearest_target(self, target_type, range = max(settings.GRID_WIDTH, settings.GRID_HEIGHT)):
+        pos = self.pos
+
+        for i in range(1,range+1):
+            vectors = []
+            for x in range(-i,i+1):
+                for y in range(-i,i+1):
+                    vectors.append(np.array([x,y]))
+            vectors.shuffle()
+            while len(vectors) > 0:
+                vector = vectors.pop()
+                if self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1]] == target_type:
+                    return self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1]]
+            return 0
+
         pass
 
     def eat(self):
