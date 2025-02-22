@@ -9,10 +9,11 @@ import settings
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, simulation):
+        self.simulation = simulation
         self.n_games = 0
         self.memory = deque(maxlen=settings.MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(8, 256, 8)
+        self.model = Linear_QNet(4, 256, 8)
         # self.model = Linear_QNet(8, 256, 8).cuda()
         self.trainer = QTrainer(self.model, lr=settings.LR, gamma=settings.GAMMA)
 
@@ -20,21 +21,26 @@ class Agent:
 
 
 
-    def get_state(self, game):
-        if len(game.plant_list) > 0 and len(game.prey_list) > 0:
+    def get_state(self, akteur, target):
+        if target != 0:
             state = [
-                    1 if game.prey_list[0].pos[0] == 0 else (settings.GRID_WIDTH-1 - game.prey_list[0].pos[0]+1)/(settings.GRID_WIDTH),
-                    1 if game.prey_list[0].pos[0] == (settings.GRID_WIDTH-1) else (game.prey_list[0].pos[0]+1)/(settings.GRID_WIDTH),
+                    akteur.pos[0],
+                    akteur.pos[1],
+                    target.pos[0],
+                    target.pos[1],
+                    # 1 if akteur.pos[0] == 0 else (settings.GRID_WIDTH-1 - akteur.pos[0]+1)/(settings.GRID_WIDTH),
+                    # 1 if akteur.pos[0] == (settings.GRID_WIDTH-1) else (akteur.pos[0]+1)/(settings.GRID_WIDTH),
 
-                    1 if game.prey_list[0].pos[1] == 0 else (settings.GRID_HEIGHT-1 - game.prey_list[0].pos[1]+1)/(settings.GRID_HEIGHT),
-                    1 if game.prey_list[0].pos[1] == (settings.GRID_HEIGHT-1) else (game.prey_list[0].pos[1]+1)/(settings.GRID_HEIGHT),
+                    # 1 if akteur.pos[1] == 0 else (settings.GRID_HEIGHT-1 - akteur.pos[1]+1)/(settings.GRID_HEIGHT),
+                    # 1 if akteur.pos[1] == (settings.GRID_HEIGHT-1) else (akteur.pos[1]+1)/(settings.GRID_HEIGHT),
 
-                    1 if game.prey_list[0].pos[0] < game.plant_list[0].pos[0] else 0,
-                    1 if game.prey_list[0].pos[0] > game.plant_list[0].pos[0] else 0,
-                    1 if game.prey_list[0].pos[1] < game.plant_list[0].pos[1] else 0,
-                    1 if game.prey_list[0].pos[1] > game.plant_list[0].pos[1] else 0,]
+                    # 1 if akteur.pos[0] < target.pos[0] else 0,
+                    # 1 if akteur.pos[0] > target.pos[0] else 0,
+                    # 1 if akteur.pos[1] < target.pos[1] else 0,
+                    # 1 if akteur.pos[1] > target.pos[1] else 0,
+                    ]
         else:
-            state = [0,0,0,0,0,0,0,0]
+            state = [0,0,0,0]
 
         return np.array(state, dtype=float)
 
@@ -46,7 +52,6 @@ class Agent:
             mini_sample = random.sample(self.memory, settings.BATCH_SIZE) # list of tuples
         else:
             mini_sample = self.memory
-
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
 
@@ -69,7 +74,7 @@ class Agent:
             final_move[move] = 1
 
 
-        return final_move, self.epsilon
+        return final_move
 
 
 if __name__ == "__main__":

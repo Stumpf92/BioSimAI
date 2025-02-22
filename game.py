@@ -4,15 +4,18 @@ import settings
 import numpy as np
 from plant import Plant
 from prey import Prey
+from agent import Agent
 
 
 class Game:
 
-    def __init__(self, agent, terrain):
-        self.agent = agent
-        self.terrain = terrain
-        #self.reset()
-        self.frame_iteration = -1
+    def __init__(self, simulation):
+
+        self.simulation = simulation
+        self.terrain = simulation.terrain.terrain_map
+
+
+        self.frame_iteration = 0
         self.plant_count = 0
         self.prey_count = 0
         self.reward = 0
@@ -20,9 +23,6 @@ class Game:
 
         self.map_per_tick = np.zeros([settings.GRID_WIDTH,
                                       settings.GRID_HEIGHT], dtype=object)
-        
-        self.plant_list = []
-        self.prey_list = []
 
         self.game_over = False
 
@@ -30,7 +30,7 @@ class Game:
     def reset(self):
 
         # set everthing to start
-        self.frame_iteration = -1
+        self.frame_iteration = 0
         self.plant_count = 0
         self.prey_count = 0
         self.reward = 0
@@ -38,47 +38,46 @@ class Game:
 
         self.map_per_tick = np.zeros([settings.GRID_WIDTH,
                                       settings.GRID_HEIGHT], dtype=object)
-        
-        self.plant_list = []
-        self.prey_list = []
-
         self.game_over = False
 
         # spawn creatures
         for _ in range(settings.PLANT_COUNT_START):
-            Plant(self,
-                np.array([random.randint((settings.GRID_WIDTH-1)//4, (3*(settings.GRID_WIDTH-1))//4), random.randint((settings.GRID_HEIGHT-1)//4, (3*(settings.GRID_HEIGHT-1))//4)]),
+            Plant(self.simulation,
+                np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
                 settings.generate_plant_heritage_stats()
                 )
         for _ in range(settings.PREY_COUNT_START):
-            Prey(self,
+            Prey(self.simulation,
                 np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
                 settings.generate_prey_heritage_stats()
                 ) 
 
 
-    def play_step(self, action):
-        
-        # reset reward for each tick of a game
+    def play_step(self):
+
         self.reward = 0
         self.plant_count = 0
         self.prey_count = 0
-       
-        # action and reward for one tick       
-        self.frame_iteration += 1
+    
+        
 
-        for _ in self.plant_list:
-            _.regular_action()
-
-        for _ in self.prey_list:
-            _.ai_action(action)
-            _.regular_action()   
-
-        self.plant_count = len(self.plant_list)
-        self.prey_count = len(self.prey_list)  
+        for x in range(settings.GRID_WIDTH):
+            for y in range(settings.GRID_HEIGHT):
+                if isinstance(self.map_per_tick[x,y], Plant):
+                    self.map_per_tick[x,y].action()
+                if isinstance(self.map_per_tick[x,y], Prey):
+                    self.reward += self.map_per_tick[x,y].action()
+        
+        for x in range(settings.GRID_WIDTH):
+            for y in range(settings.GRID_HEIGHT):
+                if isinstance(self.map_per_tick[x,y], Plant):
+                    self.plant_count += 1
+                if isinstance(self.map_per_tick[x,y], Prey):
+                    self.prey_count += 1
+        
 
         # Endcondition
-        if (self.frame_iteration+1 >= settings.MAX_TICKS_PER_GAME or
+        if (self.frame_iteration >= settings.MAX_TICKS_PER_GAME or
              self.prey_count == 0 or
                self.plant_count == 0):
             if self.prey_count == 0:
@@ -88,8 +87,9 @@ class Game:
         # add the reward for one tick to the cummulative score for the whole game
         self.score += self.reward
 
+        self.frame_iteration += 1
         # return 
-        return self.frame_iteration, self.reward, self.game_over, self.score, self.map_per_tick, self.plant_count, self.prey_count, action
+        return self.frame_iteration, self.reward, self.game_over, self.score, self.map_per_tick, self.plant_count, self.prey_count
     
     def get_random_free_pos(self, position):
         directions = [np.array([0, 1]), np.array([0, -1]), np.array([1, 0]), np.array([-1, 0]), np.array([1, 1]), np.array([-1, -1]), np.array([1, -1]), np.array([-1, 1])]
