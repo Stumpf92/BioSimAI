@@ -40,25 +40,10 @@ class Simulation:
         while self.n_counter < settings.MAX_GAMES_PER_SIMULATION:
             record_mode = False
 
-            # # get old state
-            # state_old = self.agent.get_state(self.game)
-
-            # # get move
-            # final_move, epsilon = self.agent.get_action(state_old)
-
-            # # perform move and get new state      
-
             data_for_one_step = {}            
 
             frame_iteration, reward, game_over, score, map_per_tick, plant_count, prey_count= self.game.play_step()
 
-            # state_new = self.agent.get_state(self.game)
-
-            # # train short memory
-            # self.agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
-
-            # # remember
-            # self.agent.remember(state_old, final_move, reward, state_new, game_over)
 
             data_for_one_step["n_counter"] = self.n_counter        
             data_for_one_step["score"] = score

@@ -2,23 +2,35 @@ import pygame as pg
 import settings
 from plant import Plant
 from prey import Prey
+from diagram import Diagram
 import os
+
 
 class Display:
     def __init__(self):
         os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (1000,122)
         pg.init()
         pg.font.init()
+        
         self.font = pg.font.Font(None,settings.FONT_SIZE)
-        self.screen = pg.display.set_mode(((settings.GRID_WIDTH*settings.GRID_SIZE+(2*settings.X_OFFSET)+settings.TEXT_FIELD_WIDTH),
-                                           max(settings.GRID_HEIGHT*settings.GRID_SIZE+(2*settings.Y_OFFSET), settings.TEXT_FIELD_HEIGHT)))
+        self.screen = pg.display.set_mode(((settings.GRID_WIDTH*settings.GRID_SIZE+(3*settings.X_OFFSET)+settings.DIAGRAM_WIDTH),
+                                           ((3*settings.Y_OFFSET)+settings.GRID_HEIGHT*settings.GRID_SIZE+settings.DIAGRAM_HEIGHT)))
         pg.display.set_caption('BioSim')
         self.clock = pg.time.Clock()
-
         self.queue_of_valuable_informations = []
-
         self.drawing_mode = False
           
+
+        self.screen.fill(settings.BACKGROUND_COLOR)
+        self.render_text("wait for simulation", (0,0,0), (50,50))
+        pg.display.flip()
+
+        self.game_diagram = Diagram(self.screen,
+                                     settings.X_OFFSET,
+                                       2*settings.Y_OFFSET+settings.GRID_HEIGHT*settings.GRID_SIZE,
+                                         settings.GRID_WIDTH*settings.GRID_SIZE,
+                                           settings.DIAGRAM_HEIGHT)
+
     def save(self,all_valuable_informations):
         # if all_valuable_informations[-1]["mean_score"] > all_valuable_informations[-1]["score"]:
         #     self.queue_of_valuable_informations.append(all_valuable_informations)
@@ -68,6 +80,8 @@ class Display:
             self.render_text("prey:  "+ str(int(prey_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+185)) 
             self.render_text("epsilon:  "+ str(round(epsilon,3)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+205))
 
+            self.game_diagram.draw()
+
 
 
             for x in range(settings.GRID_WIDTH):
@@ -81,7 +95,8 @@ class Display:
                     if isinstance(map_per_tick[x,y], Plant):
                         pg.draw.circle(self.screen,
                                         (0, 255, 0),
-                                        (x*settings.GRID_SIZE+settings.X_OFFSET+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2), int((map_per_tick[x,y].hp/map_per_tick[x,y].heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))
+                                        (x*settings.GRID_SIZE+settings.X_OFFSET+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2),
+                                         max(settings.GRID_SIZE//4,int((map_per_tick[x,y].hp/map_per_tick[x,y].heritage_stats["max_hp"]) *(settings.GRID_SIZE//2)))
                                           )
                     elif isinstance(map_per_tick[x,y], Prey):
                         pg.draw.circle(self.screen,
