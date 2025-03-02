@@ -13,8 +13,9 @@ class Display:
         pg.font.init()
         
         self.font = pg.font.Font(None,settings.FONT_SIZE)
-        self.screen = pg.display.set_mode(((settings.GRID_WIDTH*settings.GRID_SIZE+(3*settings.X_OFFSET)+settings.DIAGRAM_WIDTH),
-                                           ((3*settings.Y_OFFSET)+settings.GRID_HEIGHT*settings.GRID_SIZE+settings.DIAGRAM_HEIGHT)))
+        self.screen = pg.display.set_mode(((settings.GRID_WIDTH*settings.GRID_SIZE+(4*settings.X_OFFSET)+2*settings.DIAGRAM_WIDTH),
+                                           max(settings.GRID_HEIGHT*settings.GRID_SIZE+2*settings.Y_OFFSET, 2*settings.DIAGRAM_HEIGHT+3*settings.Y_OFFSET)),
+                                           )
         pg.display.set_caption('BioSim')
         self.clock = pg.time.Clock()
         self.queue_of_valuable_informations = []
@@ -25,11 +26,7 @@ class Display:
         self.render_text("wait for simulation", (0,0,0), (50,50))
         pg.display.flip()
 
-        self.game_diagram = Diagram(self.screen,
-                                     settings.X_OFFSET,
-                                       2*settings.Y_OFFSET+settings.GRID_HEIGHT*settings.GRID_SIZE,
-                                         settings.GRID_WIDTH*settings.GRID_SIZE,
-                                           settings.DIAGRAM_HEIGHT)
+
 
     def save(self,all_valuable_informations):
         # if all_valuable_informations[-1]["mean_score"] > all_valuable_informations[-1]["score"]:
@@ -68,19 +65,21 @@ class Display:
 
 
             self.screen.fill(settings.BACKGROUND_COLOR)
-            pg.draw.rect(self.screen, (0,0,0), (settings.X_OFFSET-1, settings.Y_OFFSET-1, settings.GRID_WIDTH*settings.GRID_SIZE+2, settings.GRID_HEIGHT*settings.GRID_SIZE+2),width=1)
+            pg.draw.rect(self.screen, (0,0,0), (2*settings.X_OFFSET+settings.DIAGRAM_WIDTH-1, settings.Y_OFFSET-1, settings.GRID_WIDTH*settings.GRID_SIZE+2, settings.GRID_HEIGHT*settings.GRID_SIZE+2),width=1)
 
-            self.render_text("n_counter:  "+ str(int(n_counter)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+5))
-            self.render_text("record:  "+ str(int(record)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+25))
-            self.render_text("mean:  "+ str(int(mean_score)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+45))
-            self.render_text("frame:  "+ str(int(frame_iteration)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+105))
-            self.render_text("reward:  "+ str(int(reward)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+125))
-            self.render_text("score:  "+ str(int(score)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+145))
-            self.render_text("plant:  "+ str(int(plant_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+165))
-            self.render_text("prey:  "+ str(int(prey_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+185)) 
-            self.render_text("epsilon:  "+ str(round(epsilon,3)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+205))
+            # self.render_text("n_counter:  "+ str(int(n_counter)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+5))
+            # self.render_text("record:  "+ str(int(record)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+25))
+            # self.render_text("mean:  "+ str(int(mean_score)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+45))
+            # self.render_text("frame:  "+ str(int(frame_iteration)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+105))
+            # self.render_text("reward:  "+ str(int(reward)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+125))
+            # self.render_text("score:  "+ str(int(score)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+145))
+            # self.render_text("plant:  "+ str(int(plant_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+165))
+            # self.render_text("prey:  "+ str(int(prey_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+185)) 
+            # self.render_text("epsilon:  "+ str(round(epsilon,3)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+205))
 
-            self.game_diagram.draw()
+            self.game_diagram.draw([[1,2,3,4,5,6],[1,1,2,2,3,1]])
+            # self.game2_diagram.draw([[1,2,3,4,5,6],[1,1,2,2,3,1]])
+            # self.game3_diagram.draw([[1,2,3,4,5,6],[1,1,2,2,3,1]])
 
 
 
@@ -90,18 +89,18 @@ class Display:
                     color = (int(settings.TERRAIN_BASE_COLOR[0]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
                               int(settings.TERRAIN_BASE_COLOR[1]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
                                 int(settings.TERRAIN_BASE_COLOR[2]+terrain[x,y]*settings.TERRAIN_COLOR_STEP))
-                    pg.draw.rect(self.screen, color, (x*settings.GRID_SIZE+settings.X_OFFSET, y*settings.GRID_SIZE+settings.Y_OFFSET, settings.GRID_SIZE, settings.GRID_SIZE))
+                    pg.draw.rect(self.screen, color, (x*settings.GRID_SIZE+2*settings.X_OFFSET+settings.DIAGRAM_WIDTH, y*settings.GRID_SIZE+settings.Y_OFFSET, settings.GRID_SIZE, settings.GRID_SIZE))
                     
                     if isinstance(map_per_tick[x,y], Plant):
                         pg.draw.circle(self.screen,
                                         (0, 255, 0),
-                                        (x*settings.GRID_SIZE+settings.X_OFFSET+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2),
+                                        (x*settings.GRID_SIZE+2*settings.X_OFFSET+settings.DIAGRAM_WIDTH+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2),
                                          max(settings.GRID_SIZE//4,int((map_per_tick[x,y].hp/map_per_tick[x,y].heritage_stats["max_hp"]) *(settings.GRID_SIZE//2)))
                                           )
                     elif isinstance(map_per_tick[x,y], Prey):
                         pg.draw.circle(self.screen,
                                         (0, 0, 255),
-                                          (x*settings.GRID_SIZE+settings.X_OFFSET+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2), 
+                                          (x*settings.GRID_SIZE+2*settings.X_OFFSET+settings.DIAGRAM_WIDTH+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2), 
                                           max(settings.GRID_SIZE//4,int((map_per_tick[x,y].hp/map_per_tick[x,y].heritage_stats["max_hp"]) *(settings.GRID_SIZE//2)))
                                             )
                 
