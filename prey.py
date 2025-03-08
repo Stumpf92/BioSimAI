@@ -45,7 +45,7 @@ class Prey:
         #rewarding for moving closer
         if target !=0:
             if distance_before > distance_after:
-                reward += 10
+                reward += self.heritage_stats["getting_closer_bonus"]
         #punish for moving away
         else:
             reward += -10
@@ -114,6 +114,8 @@ class Prey:
                 self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
                 self.pos = new_pos
                 self.game.map_per_tick[self.pos[0],self.pos[1]] = self
+            
+            
         else:
             reward += self.heritage_stats["stupid_malus"]
         
@@ -156,4 +158,4 @@ class Prey:
 
                 
 if __name__ == "__main__":
-    exec(open("simulation.py").read())
+    exec(open("main.py").read())

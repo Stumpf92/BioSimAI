@@ -1,119 +1,464 @@
-import pygame as pg
 import settings
 from plant import Plant
 from prey import Prey
-from diagram import Diagram
-import os
+import customtkinter as ctk
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg)
+from matplotlib.figure import Figure
+from matplotlib.collections import LineCollection
+import time
+import numpy as np
 
 
 class Display:
-    def __init__(self):
-        os.environ['SDL_VIDEO_WINDOW_POS'] = '%i,%i' % (1000,122)
-        pg.init()
-        pg.font.init()
+    def __init__(self, app):
+        self.app = app
+        self.n_game_counter = 0
+        self.n_tick_counter = 0
+        self.cur_all_data_length = 0
+
+        self.start = time.time()
+        self.starting_fps = settings.FPS
+        self.pause_mode = False
+        self.latest_mode = False
+
+        ctk.set_appearance_mode("dark")  
+        ctk.set_default_color_theme("blue") 
+
+        self.root = ctk.CTk()  
+        # geometry = "{}x{}".format(4*settings.X_OFFSET+2*settings.DIAGRAM_WIDTH+settings.GRID_WIDTH*settings.GRID_SIZE,
+        #                            max(2*settings.Y_OFFSET+settings.GRID_HEIGHT*settings.GRID_SIZE, 2*settings.DIAGRAM_HEIGHT+3*settings.Y_OFFSET))
+        # self.root.geometry(geometry)
+        self.root.title("BioSim")
+
+        self.root.columnconfigure(0,weight=1)
+        self.root.columnconfigure(1,weight=1)
+        self.root.columnconfigure(2,weight=1)
+
+        self.root.rowconfigure(0, weight=1)
+        self.root.rowconfigure(1, weight=1)
+
+
+        # TOP LEFT
+
+        self.top_left_frame = ctk.CTkFrame(self.root)
+        self.top_left_frame.grid(column=0, row= 0, sticky= "n")
+
+        fig1 = Figure( dpi=100, frameon=True)
+        fig1.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
+        self.graph1 = fig1.add_subplot(1,1,1)
+        self.diagram1 = FigureCanvasTkAgg(fig1, master=self.top_left_frame)
+        self.diagram1.get_tk_widget().pack(padx = 15 , pady= 15)
+
+        fig4 = Figure( dpi=100, frameon=True)
+        fig4.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
+        self.graph4 = fig4.add_subplot(1,1,1)
+        self.diagram4 = FigureCanvasTkAgg(fig4, master=self.top_left_frame)
+        self.diagram4.get_tk_widget().pack(padx = 15 , pady= 15)
+
+        fig5 = Figure( dpi=100, frameon=True)
+        fig5.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
+        self.graph5 = fig5.add_subplot(1,1,1)
+        self.diagram5 = FigureCanvasTkAgg(fig5, master=self.top_left_frame)
+        self.diagram5.get_tk_widget().pack(padx = 15 , pady= 15)
+
         
-        self.font = pg.font.Font(None,settings.FONT_SIZE)
-        self.screen = pg.display.set_mode(((settings.GRID_WIDTH*settings.GRID_SIZE+(4*settings.X_OFFSET)+2*settings.DIAGRAM_WIDTH),
-                                           max(settings.GRID_HEIGHT*settings.GRID_SIZE+2*settings.Y_OFFSET, 2*settings.DIAGRAM_HEIGHT+3*settings.Y_OFFSET)),
-                                           )
-        pg.display.set_caption('BioSim')
-        self.clock = pg.time.Clock()
-        self.queue_of_valuable_informations = []
-        self.drawing_mode = False
+        # BOT LEFT
+        
+
+        self.bot_left_frame = ctk.CTkFrame(self.root)
+        self.bot_left_frame.grid(column=0, row= 1, sticky= "n")
+
+        self.bot_left_frame1 = ctk.CTkFrame(self.bot_left_frame)
+        self.bot_left_frame1.pack(padx = 15, pady= 15 )
+
+        self.record_mode_switch = ctk.CTkSwitch(master=self.bot_left_frame1, text="latest mode", command=self.set_latest_mode, height=29)
+        self.record_mode_switch.pack(padx = 15 )
+
+        self.bot_left_frame2 = ctk.CTkFrame(self.bot_left_frame)
+        self.bot_left_frame2.pack(padx = 15 , pady= 15)
+
+        far_backward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="<<--",command=self.far_backward_game, width = 60)
+        far_backward_game_button.pack(padx = 15 , side= "left")
+
+        far_forward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="-->>",command=self.far_forward_game, width = 60)
+        far_forward_game_button.pack(padx = 15 , side="right")
+
+        forward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="-->",command=self.forward_game, width = 60)
+        forward_game_button.pack(padx = 15 , side= "right")
+
+        backward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="<--",command=self.backward_game, width = 60)
+        backward_game_button.pack(padx = 15 , side="right")
+
+
+
+
+
+
+
+        # TOP MIDDLE
+        
+        
+        self.top_middle_frame = ctk.CTkFrame(self.root)
+        self.top_middle_frame.grid(column=1, row= 0, sticky= "n")
+
+        self.label_time = ctk.CTkLabel(self.top_middle_frame, text="start")
+        self.label_time.pack(padx = 15 , pady= 1)
+
+        self.label_game_counter = ctk.CTkLabel(self.top_middle_frame, text="start")
+        self.label_game_counter.pack(padx = 15 , pady= 1)
+
+        self.label_tick_counter = ctk.CTkLabel(self.top_middle_frame, text="start")
+        self.label_tick_counter.pack(padx = 15 , pady= 1)
+
+        self.box = ctk.CTkCanvas(self.top_middle_frame, width=settings.GRID_WIDTH*settings.GRID_SIZE, height=settings.GRID_HEIGHT*settings.GRID_SIZE)
+        self.box.pack(padx = 15 , pady= 15, side = "bottom")
+
+        
+        # BOT MIDDLE
+
+        self.bot_middle_frame = ctk.CTkFrame(self.root)
+        self.bot_middle_frame.grid(column=1, row= 1, sticky= "n")
+        
+        reset_button = ctk.CTkButton(master=self.bot_middle_frame,text="reset",command=self.reset)
+        reset_button.grid(padx = 15 , pady= 15, column=0, row= 1,)
+
+        save_button = ctk.CTkButton(master=self.bot_middle_frame,text="save",command=self.save)
+        save_button.grid(padx = 15 , pady= 15, column=1, row= 0,)
+
+        load_button = ctk.CTkButton(master=self.bot_middle_frame,text="load",command=self.load)
+        load_button.grid(padx = 15 , pady= 15, column=0, row= 0,)
+
+        quit_button = ctk.CTkButton(master=self.bot_middle_frame,text="quit",command=self.display_quit)
+        quit_button.grid(padx = 15 , pady= 15, column=1, row= 1,)
+
+        
+
+
+        # TOP RIGHT
+
+        self.top_right_frame = ctk.CTkFrame(self.root)
+        self.top_right_frame.grid(column=2, row= 0, sticky= "n")
+
+
+
+        fig2 = Figure( dpi=100, frameon=True)
+        fig2.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
+        self.graph2 = fig2.add_subplot(1,1,1)
+        self.diagram2 = FigureCanvasTkAgg(fig2, master=self.top_right_frame)
+        self.diagram2.get_tk_widget().pack(padx = 15 , pady= 15)
+
+        fig3 = Figure( dpi=100, frameon=True)
+        fig3.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
+        self.graph3 = fig3.add_subplot(1,1,1)
+        self.diagram3 = FigureCanvasTkAgg(fig3, master=self.top_right_frame)
+        self.diagram3.get_tk_widget().pack(padx = 15 , pady= 15)
+
+        fig6 = Figure( dpi=100, frameon=True)
+        fig6.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
+        self.graph6 = fig6.add_subplot(1,1,1)
+        self.diagram6 = FigureCanvasTkAgg(fig6, master=self.top_right_frame)
+        self.diagram6.get_tk_widget().pack(padx = 15 , pady= 15)
+
+
+
+        # BOT RIGHT
+
+        self.bot_right_frame = ctk.CTkFrame(self.root)
+        self.bot_right_frame.grid(column=2, row= 1, sticky= "n")
+
+        self.bot_right_frame1 = ctk.CTkFrame(self.bot_right_frame)
+        self.bot_right_frame1.pack(padx = 15 , pady= 15)
+
+        self.bot_right_frame2 = ctk.CTkFrame(self.bot_right_frame)
+        self.bot_right_frame2.pack(padx = 15 , pady= 15)
+
+
+
+
+        self.slider = ctk.CTkSlider(master=self.bot_right_frame1, from_=1, to=100, number_of_steps=100, command=self.update_slider, height=29)
+        self.slider.pack(padx = 15 )
+
+        far_backward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="<<--",command=self.far_backward_tick, width = 45)
+        far_backward_tick_button.pack(padx = 15, side= "left")
+
+        far_forward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="-->>",command=self.far_forward_tick, width = 45)
+        far_forward_tick_button.pack(padx = 15, side="right")
+
+        forward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="-->",command=self.forward_tick, width = 45)
+        forward_tick_button.pack(padx = 15, side= "right")
+
+        self.pause_button = ctk.CTkButton(master=self.bot_right_frame2,text="||",command=self.pause_tick, width = 45)
+        self.pause_button.pack(padx = 15, side="right")
+
+        backward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="<--",command=self.backward_tick, width = 45)
+        backward_tick_button.pack(padx = 15, side="right")
+
+
+        self.counter = 0
+        
+
+        self.update()        
+        self.root.mainloop()
+
+    def set_latest_mode(self):
+        self.latest_mode = not self.latest_mode
+
+    def load(self):
+        pass
+
+    def save(self):
+        pass
+    
+    def update_slider(self, value):
+        self.starting_fps = value
           
+    
+    def display_quit(self): 
+        # Simulationsthread und Mainthread(Display) beenden
+        self.app.simulation.running = False    
+        self.root.destroy()
 
-        self.screen.fill(settings.BACKGROUND_COLOR)
-        self.render_text("wait for simulation", (0,0,0), (50,50))
-        pg.display.flip()
+    def far_backward_game(self):
+        self.n_game_counter = max(self.n_game_counter-10,0)
+        self.n_tick_counter= 0
+        self.update_new_game_data()
 
+    def backward_game(self):
+        self.n_game_counter = max(self.n_game_counter-1,0)
+        self.n_tick_counter= 0
+        self.update_new_game_data()
 
+    def forward_game(self):
+        self.n_game_counter = min(self.n_game_counter+1,self.n_game_counter_array[-1])
+        self.n_tick_counter= 0
+        self.update_new_game_data()
 
-    def save(self,all_valuable_informations):
-        # if all_valuable_informations[-1]["mean_score"] > all_valuable_informations[-1]["score"]:
-        #     self.queue_of_valuable_informations.append(all_valuable_informations)
+    def far_forward_game(self):
+        self.n_game_counter = min(self.n_game_counter+10,self.n_game_counter_array[-1])
+        self.n_tick_counter= 0
+        self.update_new_game_data()
+        
+    def far_backward_tick(self):
+        self.n_tick_counter = max(self.n_tick_counter-10,0)
+        
+    def backward_tick(self):
+        self.n_tick_counter = max(self.n_tick_counter-1,0)
+    
+    def pause_tick(self):
+        self.pause_mode = bool(int(self.pause_mode)-1)
+        if self.pause_mode:
+            self.pause_button.configure(text = ">>")
+        else:
+            self.pause_button.configure(text = "||")
 
-        if all_valuable_informations[-1]["record_mode"] == True:
-            self.queue_of_valuable_informations.append(all_valuable_informations)
-        elif len(self.queue_of_valuable_informations) < 2:
-            self.queue_of_valuable_informations.append(all_valuable_informations)
-
-
-    def render(self):
-        self.drawing_mode = True
-        oldest_valuable_informations = self.queue_of_valuable_informations.pop(0)
-        for i in oldest_valuable_informations:       
-            n_counter = i["n_counter"]
-            record = i["record"]
-            mean_score = i["mean_score"]
-            frame_iteration = i["frame_iteration"]
-            reward = i["reward"]
-            # game_over = i["game_over"]
-            score = i["score"]
-            map_per_tick = i["map_per_tick"]
-            plant_count = i["plant_count"]
-            prey_count = i["prey_count"]
-            # action = i["action"]
-            terrain = i["terrain"]
-            epsilon = i["epsilon"]
-
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.running = False
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_ESCAPE:
-                        self.running = False
-
-
-            self.screen.fill(settings.BACKGROUND_COLOR)
-            pg.draw.rect(self.screen, (0,0,0), (2*settings.X_OFFSET+settings.DIAGRAM_WIDTH-1, settings.Y_OFFSET-1, settings.GRID_WIDTH*settings.GRID_SIZE+2, settings.GRID_HEIGHT*settings.GRID_SIZE+2),width=1)
-
-            # self.render_text("n_counter:  "+ str(int(n_counter)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+5))
-            # self.render_text("record:  "+ str(int(record)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+25))
-            # self.render_text("mean:  "+ str(int(mean_score)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+45))
-            # self.render_text("frame:  "+ str(int(frame_iteration)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+105))
-            # self.render_text("reward:  "+ str(int(reward)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+125))
-            # self.render_text("score:  "+ str(int(score)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+145))
-            # self.render_text("plant:  "+ str(int(plant_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+165))
-            # self.render_text("prey:  "+ str(int(prey_count)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+185)) 
-            # self.render_text("epsilon:  "+ str(round(epsilon,3)), (0,0,0), (2*settings.X_OFFSET+(settings.GRID_WIDTH*settings.GRID_SIZE),settings.Y_OFFSET+205))
-
-            self.game_diagram.draw([[1,2,3,4,5,6],[1,1,2,2,3,1]])
-            # self.game2_diagram.draw([[1,2,3,4,5,6],[1,1,2,2,3,1]])
-            # self.game3_diagram.draw([[1,2,3,4,5,6],[1,1,2,2,3,1]])
+    def forward_tick(self):
+        self.n_tick_counter = min(self.n_tick_counter+1,settings.MAX_TICKS_PER_GAME-1)
+        
+    def far_forward_tick(self):
+        self.n_tick_counter = min(self.n_tick_counter+10,settings.MAX_TICKS_PER_GAME-1)
+                
 
 
+    def update(self):
+        self.update_once_per_sim()
+        def my_after():
+            self.update_every_tick()
+            self.root.after(int(1000/self.starting_fps), my_after)
+        my_after()    
+
+
+    def update_once_per_sim(self):
+        pass
+
+
+    def update_new_game_data(self):
+
+        # draw graphs when new game data is ready        
+
+        self.n_game_counter_array = []
+        self.cum_end_reward_array = []
+        self.mean_cum_end_reward_array = []
+        self.positive_record_array = []
+        self.negative_record_array = []
+        self.epsilon_end_of_game_array = []
+        self.calc_duration_array = []
+
+
+        for i in self.app.all_data:
+            self.n_game_counter_array.append(i["n_game_counter"])
+            self.cum_end_reward_array.append(i["cum_end_reward"])
+            self.mean_cum_end_reward_array.append(i["mean_cum_end_reward"])
+            self.positive_record_array.append(i["positive_record"])
+            self.negative_record_array.append(i["negative_record"])
+            self.epsilon_end_of_game_array.append(i["epsilon_end_of_game"])
+            self.calc_duration_array.append(i["calc_duration"])
+        
+        self.n_game_counter_array = np.array(self.n_game_counter_array)
+        self.cum_end_reward_array = np.array(self.cum_end_reward_array)
+        self.mean_cum_end_reward_array = np.array(self.mean_cum_end_reward_array)
+        self.positive_record_array = np.array(self.positive_record_array)
+        self.negative_record_array = np.array(self.negative_record_array)
+        self.epsilon_end_of_game_array = np.array(self.epsilon_end_of_game_array)
+        self.calc_duration_array = np.array(self.calc_duration_array)
+
+
+
+
+        #  left graph from top to bottom
+
+        self.graph1.clear()        
+        self.graph1.set_title("cum_reward and mean per game")
+        self.graph1.grid(True)
+        self.graph1.plot(self.n_game_counter_array, self.cum_end_reward_array, 'c', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.mean_cum_end_reward_array, 'm', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.positive_record_array, 'g', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.negative_record_array, 'r', linewidth=1)
+        self.graph1.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
+        self.diagram1.draw()
+
+        self.graph4.clear()        
+        self.graph4.set_title("epsilon per game")
+        self.graph4.grid(True)
+        self.graph4.plot(self.n_game_counter_array, self.epsilon_end_of_game_array, 'c', linewidth=1)        
+        self.graph4.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
+        self.diagram4.draw() 
+
+        self.graph5.clear()        
+        self.graph5.set_title("duration per game in s")
+        self.graph5.grid(True)
+        self.graph5.plot(self.n_game_counter_array, self.calc_duration_array, 'c', linewidth=1)   
+        self.graph5.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
+        self.diagram5.draw()       
+
+        # update graphs to the right
+
+        self.n_tick_counter_array = []
+        self.plant_count_array = []
+        self.prey_count_array = []
+        self.reward_array = []
+        self.cum_reward_array = []
+
+        for i in range(settings.MAX_TICKS_PER_GAME):
+            self.n_tick_counter_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["n_tick_counter"])
+            self.plant_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["plant_count"])
+            self.prey_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_count"])
+            self.reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["reward"])
+            self.cum_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["cum_reward"])
+
+        self.n_tick_counter_array = np.array(self.n_tick_counter_array)
+        self.plant_count_array = np.array(self.plant_count_array)
+        self.prey_count_array = np.array(self.prey_count_array)
+        self.reward_array = np.array(self.reward_array)
+        self.cum_reward_array = np.array(self.cum_reward_array)
+        
+        # update box, draw background terrain
+        for i in self.box.find_withtag("delete_every_game"):
+            self.box.delete(i)
+        if self.app.all_data:
+            terrain = self.app.all_data[0]["terrain"]
 
             for x in range(settings.GRID_WIDTH):
                 for y in range(settings.GRID_HEIGHT):
-
                     color = (int(settings.TERRAIN_BASE_COLOR[0]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
-                              int(settings.TERRAIN_BASE_COLOR[1]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
+                            int(settings.TERRAIN_BASE_COLOR[1]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
                                 int(settings.TERRAIN_BASE_COLOR[2]+terrain[x,y]*settings.TERRAIN_COLOR_STEP))
-                    pg.draw.rect(self.screen, color, (x*settings.GRID_SIZE+2*settings.X_OFFSET+settings.DIAGRAM_WIDTH, y*settings.GRID_SIZE+settings.Y_OFFSET, settings.GRID_SIZE, settings.GRID_SIZE))
-                    
-                    if isinstance(map_per_tick[x,y], Plant):
-                        pg.draw.circle(self.screen,
-                                        (0, 255, 0),
-                                        (x*settings.GRID_SIZE+2*settings.X_OFFSET+settings.DIAGRAM_WIDTH+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2),
-                                         max(settings.GRID_SIZE//4,int((map_per_tick[x,y].hp/map_per_tick[x,y].heritage_stats["max_hp"]) *(settings.GRID_SIZE//2)))
-                                          )
-                    elif isinstance(map_per_tick[x,y], Prey):
-                        pg.draw.circle(self.screen,
-                                        (0, 0, 255),
-                                          (x*settings.GRID_SIZE+2*settings.X_OFFSET+settings.DIAGRAM_WIDTH+settings.GRID_SIZE//2, y*settings.GRID_SIZE+settings.Y_OFFSET+settings.GRID_SIZE//2), 
-                                          max(settings.GRID_SIZE//4,int((map_per_tick[x,y].hp/map_per_tick[x,y].heritage_stats["max_hp"]) *(settings.GRID_SIZE//2)))
-                                            )
-                
+                    self.box.create_rectangle(x*settings.GRID_SIZE,
+                                               y*settings.GRID_SIZE,
+                                                 x*settings.GRID_SIZE+settings.GRID_SIZE,
+                                                   y*settings.GRID_SIZE+settings.GRID_SIZE,
+                                                     fill=self._from_rgb(color),
+                                                       tags="delete_every_game",
+                                                       width=0)
 
-            pg.display.flip()
-            self.clock.tick(settings.FPS) 
+        self.graph2.clear() 
+        self.graph2.set_title("plant and prey count, game: "+ str(self.n_game_counter))
+        self.graph2.grid(True)
+        self.graph2.plot(self.n_tick_counter_array, self.plant_count_array, 'g', linewidth=1)
+        self.graph2.plot(self.n_tick_counter_array, self.prey_count_array, 'b', linewidth=1)
+        self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+
+        self.graph3.clear()        
+        self.graph3.set_title("reward, game: "+ str(self.n_game_counter))
+        self.graph3.grid(True)
+        self.graph3.plot(self.n_tick_counter_array, self.reward_array, 'c', linewidth=1)
+        self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+
+        self.graph6.clear()        
+        self.graph6.set_title("cum reward, game: "+ str(self.n_game_counter))
+        self.graph6.grid(True)
+        self.graph6.plot(self.n_tick_counter_array, self.cum_reward_array, 'c', linewidth=1)
+        self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+
+
+
+    def update_every_tick(self):
+        #check if new data in all_data
+        if self.cur_all_data_length < len(self.app.all_data):
+            self.update_new_game_data()
+            self.cur_all_data_length = len(self.app.all_data)
         
-        self.drawing_mode = False
+        
+        # update timer
+        self.label_time.configure(text="Simulationsdauer: " + str(round(time.time() - self.start,2))+ " s")
+        self.label_game_counter.configure(text="Game: " + str(self.n_game_counter+1)+ "/"+ str(len(self.app.all_data)))
+        self.label_tick_counter.configure(text="Tick: " + str(self.n_tick_counter+1)+ "/"+ str(settings.MAX_TICKS_PER_GAME))
+        
+        
+        
+        self.graph2_axvline.remove()
+        self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+        self.diagram2.draw()
 
-    def render_text(self, text, color, pos):
-        text = self.font.render(text, True, color)
-        self.screen.blit(text, pos)
+        self.graph3_axvline.remove()
+        self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+        self.diagram3.draw()
+
+        self.graph6_axvline.remove()
+        self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+        self.diagram6.draw()
+
+        for i in self.box.find_withtag("delete_every_tick"):
+            self.box.delete(i)
+        for x in range(settings.GRID_WIDTH):
+            for y in range(settings.GRID_HEIGHT):
+                if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Plant):
+                    body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                    self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                    y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                    max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                    fill=self._from_rgb((0,255,0)),
+                                                    tags=("delete_every_tick"))
+                if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Prey):
+                    body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                    self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                    y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                    max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                    fill=self._from_rgb((0,0,255)),
+                                                    tags=("delete_every_tick"))
+         
+
+
+        # increase n_tick_counter and eventual increase n_game_counter
+        if self.pause_mode == False:
+            self.n_tick_counter += 1
+
+        if self.n_tick_counter >= settings.MAX_TICKS_PER_GAME:
+            if self.latest_mode:
+                self.n_game_counter = len(self.app.all_data)-1
+            else:
+                self.n_game_counter = min(self.n_game_counter+1,self.n_game_counter_array[-1])
+            self.update_new_game_data()
+            self.n_tick_counter = 0
+        
+
+    def _from_rgb(self, rgb):
+      r, g, b = rgb
+      return f'#{r:02x}{g:02x}{b:02x}'
+
+    def reset(self):
+        print("reset")
 
 
 if __name__ == "__main__":
-    exec(open("simulation.py").read())
+    exec(open("main.py").read())

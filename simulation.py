@@ -1,120 +1,93 @@
 import settings
 import threading
-import cProfile
-import pstats
+import time
 
 from agent import Agent
 from game import Game
 from display import Display
 from terrain import Terrain
-from plot import Plot
+
+
 
 class Simulation:
-    def __init__(self):
-        self.n_counter = 0
+    def __init__(self, app):
+        self.app = app
 
-        self.plot_scores = []    
-        self.plot_mean_scores = []
+        self.n_game_counter = 0
+
         self.total_score = 0
-        self.record = 0
+        self.record_mode = False
+        self.positive_record = 0
+        self.negative_distance_to_mean = 0
+        self.negative_record = 0
         self.mean_score = 0
 
         self.terrain = Terrain()
         self.prey_agent = Agent(self)
-        self.game = Game(self)        
+        self.game = Game(self)
 
-
-        
+        self.running = True
 
     def train(self):
-        
-        all_valuable_informations = []
-        
-        if settings.DISPLAY_MODE:
-            display = Display()
-        if settings.PLOT_MODE:
-            plot = Plot()
-        
-        self.game.reset()
 
-        while self.n_counter < settings.MAX_GAMES_PER_SIMULATION:
-            record_mode = False
+        self.game.reset() ####!
+        info_per_tick = []  
 
-            data_for_one_step = {}            
+        while self.n_game_counter < settings.MAX_GAMES_PER_SIMULATION and self.running == True:
+            start = time.time()       
 
-            frame_iteration, reward, game_over, score, map_per_tick, plant_count, prey_count= self.game.play_step()
+            self.record_mode = False           
+              
 
+            n_tick_counter, map_per_tick, plant_count, prey_count, reward, cum_reward, game_over = self.game.play_step()
 
-            data_for_one_step["n_counter"] = self.n_counter        
-            data_for_one_step["score"] = score
-            data_for_one_step["frame_iteration"] = frame_iteration
-            data_for_one_step["reward"] = reward
-            data_for_one_step["game_over"] = game_over
-            data_for_one_step["map_per_tick"] = map_per_tick.copy()
-            data_for_one_step["plant_count"] = plant_count
-            data_for_one_step["prey_count"] = prey_count
-            # data_for_one_step["action"] = action
-            data_for_one_step["terrain"] = self.terrain.terrain_map.copy()
-            # data_for_one_step["action"] = final_move
-            # data_for_one_step["state_old"] = state_old
-            data_for_one_step["epsilon"] = self.prey_agent.epsilon
-            
-
+            info_per_tick.append({"n_tick_counter": n_tick_counter,
+                                  "map_per_tick": map_per_tick.copy(),
+                                  "plant_count": plant_count,
+                                  "prey_count": prey_count,
+                                  "reward" : reward,
+                                  "cum_reward": cum_reward})
             if game_over:
                 # train long memory, plot result
                 self.game.reset()
                 self.prey_agent.train_long_memory()
                 
-                self.plot_scores.append(score)
-                self.total_score += score
+                self.total_score += cum_reward
 
-                mean_score = self.total_score / (self.n_counter+1) if self.n_counter > 0 else 0
-                self.plot_mean_scores.append(mean_score)
+                mean_cum_end_reward = self.total_score / (self.n_game_counter+1) if self.n_game_counter > 0 else 0
+                #self.plot_mean_scores.append(mean_score)
 
-                if score > self.record:
-                    self.record = score
-                    record_mode = True
+                if cum_reward > self.positive_record:
+                    self.positive_record = cum_reward
+                    self.record_mode = True
 
-            
-            data_for_one_step["record"] = self.record
-            data_for_one_step["mean_score"] = self.mean_score
-            data_for_one_step["record_mode"] = record_mode
+                if (mean_cum_end_reward-cum_reward) > self.negative_distance_to_mean:
+                    self.negative_distance_to_mean = mean_cum_end_reward-cum_reward
+                    self.negative_record = cum_reward
+                    self.record_mode = True
 
+                info_per_game = {}
+                info_per_game["n_game_counter"] = self.n_game_counter
+                info_per_game["cum_end_reward"] = cum_reward
+                info_per_game["mean_cum_end_reward"] = mean_cum_end_reward
+                info_per_game["record_mode"] = self.record_mode
+                info_per_game["positive_record"] = self.positive_record
+                info_per_game["negative_record"] = self.negative_record
+                info_per_game["terrain"] = self.terrain.terrain_map.copy()
+                info_per_game["info_per_tick"] = info_per_tick.copy()
+                info_per_game["epsilon_end_of_game"] = self.prey_agent.epsilon
+                info_per_game["calc_duration"] = (time.time() - start)
 
-            all_valuable_informations.append(data_for_one_step)
+                self.app.all_data.append(info_per_game)
 
+                print('Game', self.n_game_counter, 'Reward', cum_reward, 'Record:', self.positive_record, 'Mean:', mean_cum_end_reward)
 
-            if game_over and settings.DISPLAY_MODE:
-                display.save(all_valuable_informations)
-            
-            if display.drawing_mode == False and len(display.queue_of_valuable_informations) > 0:
-                threading.Thread(target=display.render).start()
+                info_per_tick = []  
+                self.n_game_counter += 1
 
-            plot.save(self.n_counter, self.plot_scores, self.plot_mean_scores)  
-            if game_over and settings.PLOT_MODE and (record_mode or self.n_counter % settings.PLOT_REDUCTION_FACTOR == 0):
-                plot.update()
-                pass
-
-
-
-            if game_over:    
-                print('Game', self.n_counter, 'Reward', score, 'Record:', self.record, 'Mean:', mean_score)
-                self.n_counter += 1
-
-                # reset the valuable informations to 0 for the next game
-                all_valuable_informations = []
 
             
 
 
-if __name__ == '__main__':
-    pr = cProfile.Profile()
-    pr.enable()
-
-    simulation = Simulation()
-    simulation.train()
-
-    pr.disable()
-    results = pstats.Stats(pr).sort_stats(pstats.SortKey.CUMULATIVE)
-    results.print_stats(50)
-    # results.dump_stats("results.prof")
+if __name__ == "__main__":
+    exec(open("main.py").read())

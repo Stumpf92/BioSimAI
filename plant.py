@@ -43,4 +43,4 @@ class Plant:
             
 
 if __name__ == "__main__":
-    exec(open("simulation.py").read())
+    exec(open("main.py").read())

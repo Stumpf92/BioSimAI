@@ -12,14 +12,14 @@ MIN_EPSILON = 0.01
 
 ###GAME SETTINGS
 
-MAX_TICKS_PER_GAME = 10  # 2000
+MAX_TICKS_PER_GAME = 1000  # 2000
 PLANT_COUNT_START = 10  
 PREY_COUNT_START = 3   
 HUNTER_COUNT_START = 0 
 SEED_COUNT_START = 0
 
-GRID_WIDTH = 40         #40
-GRID_HEIGHT = 40      #40
+GRID_WIDTH = 35         #40
+GRID_HEIGHT = 35      #40
 
 
 
@@ -33,14 +33,13 @@ Y_OFFSET = 20
 
 GRID_SIZE = 12
 
-DIAGRAM_WIDTH = 300
-DIAGRAM_HEIGHT = 300
+DIAGRAM_WIDTH = 5
+DIAGRAM_HEIGHT = 3
 
-FONT_SIZE = 25
 BACKGROUND_COLOR = (100 , 100, 100)
+FPS= 30
 
-FPS = 40
-#TICKS_PER_SECOND = 1000
+
 
 ### Plot settings
 
@@ -90,8 +89,9 @@ def generate_prey_heritage_stats():
         "decay_rate": 0.4,
         "vision_radius": 10,
         "seeding_probability": 0.05,
-        "stupid_malus": -10,
-        "eating_bonus": 1000,
+        "stupid_malus": -50,
+        "eating_bonus": 100,
+        "getting_closer_bonus": 20,
         "terrain_malus_multiplier": 0,}
 
 #Hunter stats
@@ -112,9 +112,6 @@ SEED_MIN_HOOK_DURATION, SEED_MAX_HOOK_DURATION = 20, 40
 SEED_MIN_SPROUT_DURATION, SEED_MAX_SPROUT_DURATION = 20, 40
 
 
-#DIAGRAM SETTINGS:
-
-DIAGRAM_INNER_PADDING = 20
 
 
 
