@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 import numpy as np
+from datetime import datetime
 
 class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -17,14 +18,29 @@ class Linear_QNet(nn.Module):
         x = self.linear2(x)
         return x
 
-    def save(self, file_name='model.pth'):
+    def save(self): 
+        # delete all files in model folder       
         model_folder_path = './model'
+        for file in [f for f in os.listdir(model_folder_path)]:
+            #print(_)
+            os.remove(model_folder_path + '/' + file)
+        now = datetime.now()
+        file_name = f'{now.strftime("%Y%m%d_%H%M%S")}.pth'
+
+        # save the latest model 
+        print(file_name)
         if not os.path.exists(model_folder_path):
             os.makedirs(model_folder_path)
 
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
+    def load(self):
+        model_folder_path = './model'
+        file_name = os.path.join(model_folder_path, os.listdir(model_folder_path)[0])
+        
+        self.load_state_dict(torch.load(file_name))
+        self.eval()
 
 class QTrainer:
     def __init__(self, model, lr, gamma):

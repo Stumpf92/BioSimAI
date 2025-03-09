@@ -1,9 +1,5 @@
-def produkt_filter(produkte, buchstabe):
-    return list(filter(lambda produkt: produkt.startswith(buchstabe), produkte))
+import torch
 
-print(produkt_filter(["Apfel", "Banane", "Ananas"], "A"))
-
-def gerade(zahlen):
-    return list(filter(lambda zahl: zahl % 2 == 0, zahlen))
-
-print(gerade([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))
+a = torch.full(size=(3, 3), fill_value=12, dtype=torch.float16, device='cpu', requires_grad=False)
+print(a)
+print(type(a))

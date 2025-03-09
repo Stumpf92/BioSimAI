@@ -1,12 +1,11 @@
 import settings
 from plant import Plant
 from prey import Prey
+from hunter import Hunter
 import customtkinter as ctk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
 from matplotlib.figure import Figure
-from matplotlib.collections import LineCollection
-import time
 import numpy as np
 
 
@@ -26,9 +25,6 @@ class Display:
         ctk.set_default_color_theme("blue") 
 
         self.root = ctk.CTk()  
-        # geometry = "{}x{}".format(4*settings.X_OFFSET+2*settings.DIAGRAM_WIDTH+settings.GRID_WIDTH*settings.GRID_SIZE,
-        #                            max(2*settings.Y_OFFSET+settings.GRID_HEIGHT*settings.GRID_SIZE, 2*settings.DIAGRAM_HEIGHT+3*settings.Y_OFFSET))
-        # self.root.geometry(geometry)
         self.root.title("BioSim")
 
         self.root.columnconfigure(0,weight=1)
@@ -78,16 +74,16 @@ class Display:
         self.bot_left_frame2 = ctk.CTkFrame(self.bot_left_frame)
         self.bot_left_frame2.pack(padx = 15 , pady= 15)
 
-        far_backward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="<<--",command=self.far_backward_game, width = 60)
+        far_backward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="<<--",command=self.far_backward_game, width = 45)
         far_backward_game_button.pack(padx = 15 , side= "left")
 
-        far_forward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="-->>",command=self.far_forward_game, width = 60)
+        far_forward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="-->>",command=self.far_forward_game, width = 45)
         far_forward_game_button.pack(padx = 15 , side="right")
 
-        forward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="-->",command=self.forward_game, width = 60)
+        forward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="-->",command=self.forward_game, width = 45)
         forward_game_button.pack(padx = 15 , side= "right")
 
-        backward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="<--",command=self.backward_game, width = 60)
+        backward_game_button = ctk.CTkButton(master=self.bot_left_frame2,text="<--",command=self.backward_game, width = 45)
         backward_game_button.pack(padx = 15 , side="right")
 
 
@@ -102,13 +98,16 @@ class Display:
         self.top_middle_frame = ctk.CTkFrame(self.root)
         self.top_middle_frame.grid(column=1, row= 0, sticky= "n")
 
-        self.label_time = ctk.CTkLabel(self.top_middle_frame, text="start")
+        self.mode_slider = ctk.CTkSlider(master=self.top_middle_frame, from_=0, to=2, number_of_steps=2, command=self.set_mode, height=29)
+        self.mode_slider.pack(padx = 15 , pady= 15)
+
+        self.label_time = ctk.CTkLabel(self.top_middle_frame, text="")
         self.label_time.pack(padx = 15 , pady= 1)
 
-        self.label_game_counter = ctk.CTkLabel(self.top_middle_frame, text="start")
+        self.label_game_counter = ctk.CTkLabel(self.top_middle_frame, text="")
         self.label_game_counter.pack(padx = 15 , pady= 1)
 
-        self.label_tick_counter = ctk.CTkLabel(self.top_middle_frame, text="start")
+        self.label_tick_counter = ctk.CTkLabel(self.top_middle_frame, text="")
         self.label_tick_counter.pack(padx = 15 , pady= 1)
 
         self.box = ctk.CTkCanvas(self.top_middle_frame, width=settings.GRID_WIDTH*settings.GRID_SIZE, height=settings.GRID_HEIGHT*settings.GRID_SIZE)
@@ -188,9 +187,6 @@ class Display:
         forward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="-->",command=self.forward_tick, width = 45)
         forward_tick_button.pack(padx = 15, side= "right")
 
-        self.pause_button = ctk.CTkButton(master=self.bot_right_frame2,text="||",command=self.pause_tick, width = 45)
-        self.pause_button.pack(padx = 15, side="right")
-
         backward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="<--",command=self.backward_tick, width = 45)
         backward_tick_button.pack(padx = 15, side="right")
 
@@ -201,14 +197,28 @@ class Display:
         self.update()        
         self.root.mainloop()
 
+    def set_mode(self, value):
+        if value == 0:
+            self.app.display_mode = False
+            self.app.simulation_mode = True
+        elif value == 1:
+            self.app.simulation_mode = True
+            self.app.display_mode = True
+            # self.update()
+
+        elif value == 2:
+            self.app.simulation_mode = False
+            self.app.display_mode = True
+
+
     def set_latest_mode(self):
         self.latest_mode = not self.latest_mode
 
     def load(self):
-        pass
+        self.app.simulation.prey_agent.model.load()
 
     def save(self):
-        pass
+        self.app.simulation.prey_agent.model.save()
     
     def update_slider(self, value):
         self.starting_fps = value
@@ -245,12 +255,12 @@ class Display:
     def backward_tick(self):
         self.n_tick_counter = max(self.n_tick_counter-1,0)
     
-    def pause_tick(self):
+    def pause_display_tick(self):
         self.pause_mode = bool(int(self.pause_mode)-1)
         if self.pause_mode:
-            self.pause_button.configure(text = ">>")
+            self.pause_display_button.configure(text = ">>")
         else:
-            self.pause_button.configure(text = "||")
+            self.pause_display_button.configure(text = "||")
 
     def forward_tick(self):
         self.n_tick_counter = min(self.n_tick_counter+1,settings.MAX_TICKS_PER_GAME-1)
@@ -263,7 +273,11 @@ class Display:
     def update(self):
         self.update_once_per_sim()
         def my_after():
-            self.update_every_tick()
+            if self.app.display_mode:
+                self.update_every_tick()
+            else:
+                time.sleep(0.1)
+            
             self.root.after(int(1000/self.starting_fps), my_after)
         my_after()    
 
@@ -281,7 +295,8 @@ class Display:
         self.mean_cum_end_reward_array = []
         self.positive_record_array = []
         self.negative_record_array = []
-        self.epsilon_end_of_game_array = []
+        self.prey_epsilon_end_of_game_array = []
+        self.hunter_epsilon_end_of_game_array = []
         self.calc_duration_array = []
 
 
@@ -291,7 +306,8 @@ class Display:
             self.mean_cum_end_reward_array.append(i["mean_cum_end_reward"])
             self.positive_record_array.append(i["positive_record"])
             self.negative_record_array.append(i["negative_record"])
-            self.epsilon_end_of_game_array.append(i["epsilon_end_of_game"])
+            self.prey_epsilon_end_of_game_array.append(i["prey_epsilon_end_of_game"])
+            self.hunter_epsilon_end_of_game_array.append(i["hunter_epsilon_end_of_game"])
             self.calc_duration_array.append(i["calc_duration"])
         
         self.n_game_counter_array = np.array(self.n_game_counter_array)
@@ -299,7 +315,8 @@ class Display:
         self.mean_cum_end_reward_array = np.array(self.mean_cum_end_reward_array)
         self.positive_record_array = np.array(self.positive_record_array)
         self.negative_record_array = np.array(self.negative_record_array)
-        self.epsilon_end_of_game_array = np.array(self.epsilon_end_of_game_array)
+        self.prey_epsilon_end_of_game_array = np.array(self.prey_epsilon_end_of_game_array)
+        self.hunter_epsilon_end_of_game_array = np.array(self.hunter_epsilon_end_of_game_array)
         self.calc_duration_array = np.array(self.calc_duration_array)
 
 
@@ -320,7 +337,8 @@ class Display:
         self.graph4.clear()        
         self.graph4.set_title("epsilon per game")
         self.graph4.grid(True)
-        self.graph4.plot(self.n_game_counter_array, self.epsilon_end_of_game_array, 'c', linewidth=1)        
+        self.graph4.plot(self.n_game_counter_array, self.prey_epsilon_end_of_game_array, 'g', linewidth=1)     
+        self.graph4.plot(self.n_game_counter_array, self.hunter_epsilon_end_of_game_array, 'r', linewidth=1)   
         self.graph4.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
         self.diagram4.draw() 
 
@@ -336,19 +354,25 @@ class Display:
         self.n_tick_counter_array = []
         self.plant_count_array = []
         self.prey_count_array = []
+        self.hunter_count_array = []
         self.reward_array = []
         self.cum_reward_array = []
 
-        for i in range(settings.MAX_TICKS_PER_GAME):
+        max_tick_counter_for_this_game = self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"]
+
+        for i in range(max_tick_counter_for_this_game):
             self.n_tick_counter_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["n_tick_counter"])
             self.plant_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["plant_count"])
             self.prey_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_count"])
+            self.hunter_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["hunter_count"])
             self.reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["reward"])
             self.cum_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["cum_reward"])
+
 
         self.n_tick_counter_array = np.array(self.n_tick_counter_array)
         self.plant_count_array = np.array(self.plant_count_array)
         self.prey_count_array = np.array(self.prey_count_array)
+        self.hunter_count_array = np.array(self.hunter_count_array)
         self.reward_array = np.array(self.reward_array)
         self.cum_reward_array = np.array(self.cum_reward_array)
         
@@ -376,80 +400,91 @@ class Display:
         self.graph2.grid(True)
         self.graph2.plot(self.n_tick_counter_array, self.plant_count_array, 'g', linewidth=1)
         self.graph2.plot(self.n_tick_counter_array, self.prey_count_array, 'b', linewidth=1)
-        self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+        self.graph2.plot(self.n_tick_counter_array, self.hunter_count_array, 'r', linewidth=1)
+        self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
 
         self.graph3.clear()        
         self.graph3.set_title("reward, game: "+ str(self.n_game_counter))
         self.graph3.grid(True)
         self.graph3.plot(self.n_tick_counter_array, self.reward_array, 'c', linewidth=1)
-        self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+        self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
 
         self.graph6.clear()        
         self.graph6.set_title("cum reward, game: "+ str(self.n_game_counter))
         self.graph6.grid(True)
         self.graph6.plot(self.n_tick_counter_array, self.cum_reward_array, 'c', linewidth=1)
-        self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
+        self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
 
 
 
     def update_every_tick(self):
-        #check if new data in all_data
-        if self.cur_all_data_length < len(self.app.all_data):
-            self.update_new_game_data()
-            self.cur_all_data_length = len(self.app.all_data)
-        
-        
-        # update timer
-        self.label_time.configure(text="Simulationsdauer: " + str(round(time.time() - self.start,2))+ " s")
-        self.label_game_counter.configure(text="Game: " + str(self.n_game_counter+1)+ "/"+ str(len(self.app.all_data)))
-        self.label_tick_counter.configure(text="Tick: " + str(self.n_tick_counter+1)+ "/"+ str(settings.MAX_TICKS_PER_GAME))
-        
-        
-        
-        self.graph2_axvline.remove()
-        self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
-        self.diagram2.draw()
+        if self.app.all_data:
+            #check if new data in all_data
+            if self.cur_all_data_length < len(self.app.all_data):
+                self.update_new_game_data()
+                self.cur_all_data_length = len(self.app.all_data)
+            
+            
+            # update timer
+            self.label_time.configure(text="Simulationsdauer: " + str(round(time.time() - self.start,2))+ " s")
+            self.label_game_counter.configure(text="Game: " + str(self.n_game_counter)+ "/"+ str(len(self.app.all_data)-1))
+            self.label_tick_counter.configure(text="Tick: " + str(self.n_tick_counter)+ "/"+ str(settings.MAX_TICKS_PER_GAME-1))
+            
+            
+            
+            self.graph2_axvline.remove()
+            self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
+            self.diagram2.draw()
 
-        self.graph3_axvline.remove()
-        self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
-        self.diagram3.draw()
+            self.graph3_axvline.remove()
+            self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
+            self.diagram3.draw()
 
-        self.graph6_axvline.remove()
-        self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='r', linestyle='dashed', linewidth=1)
-        self.diagram6.draw()
+            self.graph6_axvline.remove()
+            self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
+            self.diagram6.draw()
 
-        for i in self.box.find_withtag("delete_every_tick"):
-            self.box.delete(i)
-        for x in range(settings.GRID_WIDTH):
-            for y in range(settings.GRID_HEIGHT):
-                if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Plant):
-                    body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
-                    self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                    y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                    max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
-                                                    fill=self._from_rgb((0,255,0)),
-                                                    tags=("delete_every_tick"))
-                if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Prey):
-                    body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
-                    self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                    y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                    max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
-                                                    fill=self._from_rgb((0,0,255)),
-                                                    tags=("delete_every_tick"))
-         
+            for i in self.box.find_withtag("delete_every_tick"):
+                self.box.delete(i)
+            for x in range(settings.GRID_WIDTH):
+                for y in range(settings.GRID_HEIGHT):
+                    if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Plant):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                        self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                        y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                        max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                        fill=self._from_rgb((0,255,0)),
+                                                        tags=("delete_every_tick"))
+                    elif isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Prey):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                        self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                        y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                        max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                        fill=self._from_rgb((0,0,255)),
+                                                        tags=("delete_every_tick"))
+                    elif isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Hunter):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                        self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                        y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                        max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                        fill=self._from_rgb((255,0,0)),
+                                                        tags=("delete_every_tick"))
+            
 
 
-        # increase n_tick_counter and eventual increase n_game_counter
-        if self.pause_mode == False:
-            self.n_tick_counter += 1
+            # increase n_tick_counter and eventual increase n_game_counter
+            if self.pause_mode == False:
+                self.n_tick_counter += 1
+            
+            max_tick_counter_for_this_game = self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"]
 
-        if self.n_tick_counter >= settings.MAX_TICKS_PER_GAME:
-            if self.latest_mode:
-                self.n_game_counter = len(self.app.all_data)-1
-            else:
-                self.n_game_counter = min(self.n_game_counter+1,self.n_game_counter_array[-1])
-            self.update_new_game_data()
-            self.n_tick_counter = 0
+            if self.n_tick_counter >= max_tick_counter_for_this_game:
+                if self.latest_mode:
+                    self.n_game_counter = len(self.app.all_data)-1
+                else:
+                    self.n_game_counter = min(self.n_game_counter+1,self.n_game_counter_array[-1])
+                self.update_new_game_data()
+                self.n_tick_counter = 0
         
 
     def _from_rgb(self, rgb):

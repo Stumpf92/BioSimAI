@@ -15,7 +15,7 @@ MIN_EPSILON = 0.01
 MAX_TICKS_PER_GAME = 1000  # 2000
 PLANT_COUNT_START = 10  
 PREY_COUNT_START = 3   
-HUNTER_COUNT_START = 0 
+HUNTER_COUNT_START = 1 
 SEED_COUNT_START = 0
 
 GRID_WIDTH = 35         #40
@@ -67,7 +67,7 @@ def generate_plant_heritage_stats():
         "max_starting_hp":50,
         "max_hp":100,
         "reproduction_threshold": 80,
-        "growth_rate": random.randint(20, 25)/100,
+        "growth_rate": random.randint(40, 50)/100,
         "max_hp_multiplier": 1.1,
         "ticks_per_action": 8,
         "ticks_per_mutation": 0,
@@ -80,12 +80,10 @@ def generate_plant_heritage_stats():
 def generate_prey_heritage_stats():     
     return {
         "generation": 0,
-        "min_starting_hp":60,
-        "max_starting_hp":100,
-        "max_hp":200,
-        "reproduction_threshold": 150,
-        "ticks_per_action": 6,
-        "ticks_per_mutation": 0,
+        "min_starting_hp":30,
+        "max_starting_hp":120,
+        "max_hp":250,
+        "reproduction_threshold": 230,
         "decay_rate": 0.4,
         "vision_radius": 10,
         "seeding_probability": 0.05,
@@ -99,12 +97,17 @@ HUNTER_MIN_STARTING_HEALTH_POINTS , HUNTER_MAX_STARTING_HEALTH_POINTS = 60, 100
 def generate_hunter_heritage_stats():
     return {
         "generation": 0,
-        "reproduction_threshold": 200,
-        "ticks_per_action": 3,
-        "ticks_per_mutation": 0,
+        "min_starting_hp":80,
+        "max_starting_hp":150,
+        "max_hp":700,
+        "reproduction_threshold": 600,
         "decay_rate": 0.4,
         "vision_radius": 10,
-        "fight_multiplier": 0.8}
+        "seeding_probability": 0.05,
+        "stupid_malus": -50,
+        "eating_bonus": 100,
+        "getting_closer_bonus": 20,
+        "terrain_malus_multiplier": 0,}
 
 
 #Seed stats

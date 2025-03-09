@@ -1,10 +1,10 @@
 import settings
 import random
 import numpy as np
+from prey import Prey
 from plant import Plant
-from hunter import Hunter
 
-class Prey:
+class Hunter:
 
     def __init__(self, simulation, pos, heritage_stats):
 
@@ -31,13 +31,13 @@ class Prey:
 
         reward = 0
         ##identify closest target
-        target = self.detect_nearest_target(Plant)
+        target = self.detect_nearest_target(Prey)
         # get old state
-        state_old = self.simulation.prey_agent.get_state(self, target)
+        state_old = self.simulation.hunter_agent.get_state(self, target)
         if target !=0:
             distance_before = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
         # get move
-        final_move = self.simulation.prey_agent.get_action(state_old)
+        final_move = self.simulation.hunter_agent.get_action(state_old)
         #make the move       
         reward += self.move_and_or_eat(final_move)
         if target !=0:
@@ -50,11 +50,11 @@ class Prey:
         else:
             reward += -10
         # get new state
-        state_new = self.simulation.prey_agent.get_state(self, target)
+        state_new = self.simulation.hunter_agent.get_state(self, target)
         #train
-        self.simulation.prey_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
+        self.simulation.hunter_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
         # remember
-        self.simulation.prey_agent.remember(state_old, final_move, reward, state_new, game_over)
+        self.simulation.hunter_agent.remember(state_old, final_move, reward, state_new, game_over)
 
         ###extra stuff
         self.kill_check()
@@ -89,24 +89,19 @@ class Prey:
             new_pos[0] < settings.GRID_WIDTH and
             new_pos[1] >= 0 and
             new_pos[1] < settings.GRID_HEIGHT):
-            if isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], Plant):
-                # Pflanzen fressen
+            if isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], Prey):
+                # Prey fressen
                 target = self.game.map_per_tick[new_pos[0],new_pos[1]]
                 self.hp = min(self.hp+target.hp, self.heritage_stats["max_hp"])
                 target.hp = 0
                 target.kill_check()
-                # und dann auf das Pflanzenfeld ziehen
+                # und dann auf das Preyfeld ziehen
                 self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
                 self.pos = new_pos
                 self.game.map_per_tick[self.pos[0],self.pos[1]] = self
-                # und eine neue Pflanze an random Ort spawnen
-                # Plant(self.simulation,
-                #     np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
-                #     settings.generate_plant_heritage_stats()
-                #         )
                 #belohnen fürs essen
                 reward += self.heritage_stats["eating_bonus"]
-            elif isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], Prey):
+            elif isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], Plant):
                 # Punish für dämlichen Movement-Versuch
                 reward += self.heritage_stats["stupid_malus"]
             elif isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], Hunter):
@@ -149,7 +144,7 @@ class Prey:
     def reproduce_check(self):
         if self.hp >= self.heritage_stats["reproduction_threshold"]:
             self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
-            Prey(self.simulation, self.pos, self.heritage_stats)
+            Hunter(self.simulation, self.pos, self.heritage_stats)
         
     
     def kill_check(self):

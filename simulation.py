@@ -24,6 +24,7 @@ class Simulation:
 
         self.terrain = Terrain()
         self.prey_agent = Agent(self)
+        self.hunter_agent = Agent(self)
         self.game = Game(self)
 
         self.running = True
@@ -33,24 +34,30 @@ class Simulation:
         self.game.reset() ####!
         info_per_tick = []  
 
-        while self.n_game_counter < settings.MAX_GAMES_PER_SIMULATION and self.running == True:
-            start = time.time()       
 
-            self.record_mode = False           
+
+        while self.n_game_counter < settings.MAX_GAMES_PER_SIMULATION and self.running == True:
+            while self.app.simulation_mode == False:
+                print("Simulation paused")
+                time.sleep(1)     
+            start = time.time()
+            self.record_mode = False    
               
 
-            n_tick_counter, map_per_tick, plant_count, prey_count, reward, cum_reward, game_over = self.game.play_step()
+            n_tick_counter, map_per_tick, plant_count, prey_count, hunter_count, reward, cum_reward, game_over = self.game.play_step()
 
             info_per_tick.append({"n_tick_counter": n_tick_counter,
                                   "map_per_tick": map_per_tick.copy(),
                                   "plant_count": plant_count,
                                   "prey_count": prey_count,
+                                  "hunter_count": hunter_count,
                                   "reward" : reward,
                                   "cum_reward": cum_reward})
             if game_over:
                 # train long memory, plot result
                 self.game.reset()
                 self.prey_agent.train_long_memory()
+                self.hunter_agent.train_long_memory()
                 
                 self.total_score += cum_reward
 
@@ -75,7 +82,8 @@ class Simulation:
                 info_per_game["negative_record"] = self.negative_record
                 info_per_game["terrain"] = self.terrain.terrain_map.copy()
                 info_per_game["info_per_tick"] = info_per_tick.copy()
-                info_per_game["epsilon_end_of_game"] = self.prey_agent.epsilon
+                info_per_game["prey_epsilon_end_of_game"] = self.prey_agent.epsilon                
+                info_per_game["hunter_epsilon_end_of_game"] = self.prey_agent.epsilon
                 info_per_game["calc_duration"] = (time.time() - start)
 
                 self.app.all_data.append(info_per_game)
