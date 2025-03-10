@@ -1,9 +1,10 @@
 import random
 import settings
 import numpy as np
-from plant import Plant
-from prey import Prey
-from hunter import Hunter
+# from plant import Plant
+# from prey import Prey
+# from hunter import Hunter
+from creature import Plant, Prey, Hunter
 from agent import Agent
 
 
@@ -74,7 +75,7 @@ class Game:
                 elif isinstance(self.map_per_tick[x,y], Prey):
                     list_of_preys.append(self.map_per_tick[x,y])
                 elif isinstance(self.map_per_tick[x,y], Hunter):
-                    list_of_preys.append(self.map_per_tick[x,y])
+                    list_of_hunters.append(self.map_per_tick[x,y])
 
         for _ in list_of_plants:
             _.action()

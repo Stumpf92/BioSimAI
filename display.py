@@ -1,7 +1,8 @@
 import settings
-from plant import Plant
-from prey import Prey
-from hunter import Hunter
+# from plant import Plant
+# from prey import Prey
+# from hunter import Hunter
+from creature import Plant, Prey, Hunter
 import customtkinter as ctk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)

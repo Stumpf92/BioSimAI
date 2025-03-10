@@ -4,7 +4,6 @@ import time
 
 from agent import Agent
 from game import Game
-from display import Display
 from terrain import Terrain
 
 
