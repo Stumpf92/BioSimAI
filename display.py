@@ -27,6 +27,7 @@ class Display:
         ctk.set_default_color_theme("blue") 
 
         self.root = ctk.CTk()  
+        self.root._state_before_windows_set_titlebar_color = 'zoomed'
         self.root.title("BioSim")
 
         self.root.columnconfigure(0,weight=1)
@@ -100,7 +101,7 @@ class Display:
         self.top_middle_frame = ctk.CTkFrame(self.root)
         self.top_middle_frame.grid(column=1, row= 0, sticky= "n")
 
-        self.mode_slider = ctk.CTkSlider(master=self.top_middle_frame, from_=0, to=2, number_of_steps=2, command=self.set_mode, height=29)
+        self.mode_slider = ctk.CTkSlider(master=self.top_middle_frame, from_=0, to=1, number_of_steps=1, command=self.set_mode, height=29,)
         self.mode_slider.pack(padx = 15 , pady= 15)
 
         self.label_time = ctk.CTkLabel(self.top_middle_frame, text="")
@@ -194,7 +195,10 @@ class Display:
 
 
         self.counter = 0
+        self.mode_slider.set(0)
+        self.set_mode(0)
         
+        self.root.state("zoomed")
 
         self.update()        
         self.root.mainloop()
@@ -204,12 +208,8 @@ class Display:
             self.app.display_mode = False
             self.app.simulation_mode = True
         elif value == 1:
-            self.app.simulation_mode = True
-            self.app.display_mode = True
-            # self.update()
-
-        elif value == 2:
             self.app.simulation_mode = False
+            self.app.simulation.game.game_over = True
             self.app.display_mode = True
 
 
@@ -293,33 +293,45 @@ class Display:
         # draw graphs when new game data is ready        
 
         self.n_game_counter_array = []
-        self.cum_end_reward_array = []
-        self.mean_cum_end_reward_array = []
-        self.positive_record_array = []
-        self.negative_record_array = []
-        self.prey_epsilon_end_of_game_array = []
-        self.hunter_epsilon_end_of_game_array = []
         self.calc_duration_array = []
+
+        self.prey_cum_end_reward_array = []
+        self.prey_mean_cum_end_reward_array = []
+        self.prey_positive_record_array = []
+        self.prey_epsilon_end_of_game_array = []
+
+        self.hunter_cum_end_reward_array = []
+        self.hunter_mean_cum_end_reward_array = []
+        self.hunter_positive_record_array = []
+        self.hunter_epsilon_end_of_game_array = []
 
 
         for i in self.app.all_data:
             self.n_game_counter_array.append(i["n_game_counter"])
-            self.cum_end_reward_array.append(i["cum_end_reward"])
-            self.mean_cum_end_reward_array.append(i["mean_cum_end_reward"])
-            self.positive_record_array.append(i["positive_record"])
-            self.negative_record_array.append(i["negative_record"])
-            self.prey_epsilon_end_of_game_array.append(i["prey_epsilon_end_of_game"])
-            self.hunter_epsilon_end_of_game_array.append(i["hunter_epsilon_end_of_game"])
             self.calc_duration_array.append(i["calc_duration"])
+
+            self.prey_cum_end_reward_array.append(i["prey_cum_end_reward"])
+            self.prey_mean_cum_end_reward_array.append(i["prey_mean_cum_end_reward"])
+            self.prey_positive_record_array.append(i["prey_positive_record"])
+            self.prey_epsilon_end_of_game_array.append(i["prey_epsilon_end_of_game"])
+            
+            self.hunter_cum_end_reward_array.append(i["hunter_cum_end_reward"])
+            self.hunter_mean_cum_end_reward_array.append(i["hunter_mean_cum_end_reward"])
+            self.hunter_positive_record_array.append(i["hunter_positive_record"])
+            self.hunter_epsilon_end_of_game_array.append(i["hunter_epsilon_end_of_game"])
         
-        self.n_game_counter_array = np.array(self.n_game_counter_array)
-        self.cum_end_reward_array = np.array(self.cum_end_reward_array)
-        self.mean_cum_end_reward_array = np.array(self.mean_cum_end_reward_array)
-        self.positive_record_array = np.array(self.positive_record_array)
-        self.negative_record_array = np.array(self.negative_record_array)
-        self.prey_epsilon_end_of_game_array = np.array(self.prey_epsilon_end_of_game_array)
-        self.hunter_epsilon_end_of_game_array = np.array(self.hunter_epsilon_end_of_game_array)
+        self.n_game_counter_array = np.array(self.n_game_counter_array)        
         self.calc_duration_array = np.array(self.calc_duration_array)
+
+        self.prey_cum_end_reward_array = np.array(self.prey_cum_end_reward_array)
+        self.prey_mean_cum_end_reward_array = np.array(self.prey_mean_cum_end_reward_array)
+        self.prey_positive_record_array = np.array(self.prey_positive_record_array)
+        self.prey_epsilon_end_of_game_array = np.array(self.prey_epsilon_end_of_game_array)
+
+        self.hunter_cum_end_reward_array = np.array(self.hunter_cum_end_reward_array)
+        self.hunter_mean_cum_end_reward_array = np.array(self.hunter_mean_cum_end_reward_array)
+        self.hunter_positive_record_array = np.array(self.hunter_positive_record_array)
+        self.hunter_epsilon_end_of_game_array = np.array(self.hunter_epsilon_end_of_game_array)
 
 
 
@@ -329,26 +341,28 @@ class Display:
         self.graph1.clear()        
         self.graph1.set_title("cum_reward and mean per game")
         self.graph1.grid(True)
-        self.graph1.plot(self.n_game_counter_array, self.cum_end_reward_array, 'c', linewidth=1)
-        self.graph1.plot(self.n_game_counter_array, self.mean_cum_end_reward_array, 'm', linewidth=1)
-        self.graph1.plot(self.n_game_counter_array, self.positive_record_array, 'g', linewidth=1)
-        self.graph1.plot(self.n_game_counter_array, self.negative_record_array, 'r', linewidth=1)
-        self.graph1.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.prey_cum_end_reward_array, 'b', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.prey_mean_cum_end_reward_array, 'b', linewidth=1, linestyle='dotted')
+        #self.graph1.plot(self.n_game_counter_array, self.prey_positive_record_array, 'b', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.hunter_cum_end_reward_array, 'r', linewidth=1)
+        self.graph1.plot(self.n_game_counter_array, self.hunter_mean_cum_end_reward_array, 'r', linewidth=1, linestyle='dotted')
+        #self.graph1.plot(self.n_game_counter_array, self.hunter_positive_record_array, 'r', linewidth=1)
+        self.graph1.axvline(x=self.n_game_counter, color='m', linestyle='dashed', linewidth=1)
         self.diagram1.draw()
 
         self.graph4.clear()        
         self.graph4.set_title("epsilon per game")
         self.graph4.grid(True)
-        self.graph4.plot(self.n_game_counter_array, self.prey_epsilon_end_of_game_array, 'g', linewidth=1)     
+        self.graph4.plot(self.n_game_counter_array, self.prey_epsilon_end_of_game_array, 'b', linewidth=1)     
         self.graph4.plot(self.n_game_counter_array, self.hunter_epsilon_end_of_game_array, 'r', linewidth=1)   
-        self.graph4.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
+        self.graph4.axvline(x=self.n_game_counter, color='m', linestyle='dashed', linewidth=1)
         self.diagram4.draw() 
 
         self.graph5.clear()        
         self.graph5.set_title("duration per game in s")
         self.graph5.grid(True)
-        self.graph5.plot(self.n_game_counter_array, self.calc_duration_array, 'c', linewidth=1)   
-        self.graph5.axvline(x=self.n_game_counter, color='r', linestyle='dashed', linewidth=1)
+        self.graph5.plot(self.n_game_counter_array, self.calc_duration_array, 'm', linewidth=1)   
+        self.graph5.axvline(x=self.n_game_counter, color='m', linestyle='dashed', linewidth=1)
         self.diagram5.draw()       
 
         # update graphs to the right
@@ -357,8 +371,10 @@ class Display:
         self.plant_count_array = []
         self.prey_count_array = []
         self.hunter_count_array = []
-        self.reward_array = []
-        self.cum_reward_array = []
+        self.prey_reward_array = []
+        self.prey_cum_reward_array = []
+        self.hunter_reward_array = []
+        self.hunter_cum_reward_array = []
 
         max_tick_counter_for_this_game = self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"]
 
@@ -367,16 +383,20 @@ class Display:
             self.plant_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["plant_count"])
             self.prey_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_count"])
             self.hunter_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["hunter_count"])
-            self.reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["reward"])
-            self.cum_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["cum_reward"])
+            self.prey_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_reward"])
+            self.prey_cum_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_cum_reward"])
+            self.hunter_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["hunter_reward"])
+            self.hunter_cum_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["hunter_cum_reward"])
 
 
         self.n_tick_counter_array = np.array(self.n_tick_counter_array)
         self.plant_count_array = np.array(self.plant_count_array)
         self.prey_count_array = np.array(self.prey_count_array)
         self.hunter_count_array = np.array(self.hunter_count_array)
-        self.reward_array = np.array(self.reward_array)
-        self.cum_reward_array = np.array(self.cum_reward_array)
+        self.prey_reward_array = np.array(self.prey_reward_array)
+        self.prey_cum_reward_array = np.array(self.prey_cum_reward_array)
+        self.hunter_reward_array = np.array(self.hunter_reward_array)
+        self.hunter_cum_reward_array = np.array(self.hunter_cum_reward_array)
         
         # update box, draw background terrain
         for i in self.box.find_withtag("delete_every_game"):
@@ -408,13 +428,15 @@ class Display:
         self.graph3.clear()        
         self.graph3.set_title("reward, game: "+ str(self.n_game_counter))
         self.graph3.grid(True)
-        self.graph3.plot(self.n_tick_counter_array, self.reward_array, 'c', linewidth=1)
+        self.graph3.plot(self.n_tick_counter_array, self.prey_reward_array, 'b', linewidth=1)
+        self.graph3.plot(self.n_tick_counter_array, self.hunter_reward_array, 'r', linewidth=1)
         self.graph3_axvline = self.graph3.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
 
         self.graph6.clear()        
         self.graph6.set_title("cum reward, game: "+ str(self.n_game_counter))
         self.graph6.grid(True)
-        self.graph6.plot(self.n_tick_counter_array, self.cum_reward_array, 'c', linewidth=1)
+        self.graph6.plot(self.n_tick_counter_array, self.prey_cum_reward_array, 'b', linewidth=1)
+        self.graph6.plot(self.n_tick_counter_array, self.hunter_cum_reward_array, 'r', linewidth=1)
         self.graph6_axvline = self.graph6.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
 
 
@@ -450,22 +472,29 @@ class Display:
                 self.box.delete(i)
             for x in range(settings.GRID_WIDTH):
                 for y in range(settings.GRID_HEIGHT):
-                    if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Plant):
-                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                    body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                    if isinstance(body, Plant):                        
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
                                                         fill=self._from_rgb((0,255,0)),
                                                         tags=("delete_every_tick"))
-                    elif isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Prey):
-                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                    elif isinstance(body, Prey):
+                        if body.seed_state == True:
+                            self.box.create_rectangle(x*settings.GRID_SIZE,
+                                                       y*settings.GRID_SIZE,
+                                                         (x+1)*settings.GRID_SIZE,
+                                                           (y+1)*settings.GRID_SIZE,
+                                                           fill="",
+                                                            width=2,
+                                                              outline=self._from_rgb((0,255,0)),
+                                                                tags=("delete_every_tick"))
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
                                                         fill=self._from_rgb((0,0,255)),
                                                         tags=("delete_every_tick"))
-                    elif isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y], Hunter):
-                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
+                    elif isinstance(body, Hunter):
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),

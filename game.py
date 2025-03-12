@@ -19,8 +19,8 @@ class Game:
         self.n_tick_counter = -1
         self.plant_count = 0
         self.prey_count = 0
-        self.reward = 0
-        self.cum_reward = 0
+        self.prey_reward = 0
+        self.prey_cum_reward = 0
 
         self.map_per_tick = np.zeros([settings.GRID_WIDTH,
                                       settings.GRID_HEIGHT], dtype=object)
@@ -34,8 +34,12 @@ class Game:
         self.n_tick_counter = -1
         self.plant_count = 0
         self.prey_count = 0
-        self.reward = 0
-        self.cum_reward = 0
+        self.hunter_count = 0
+        self.prey_reward = 0
+        self.prey_cum_reward = 0
+        self.hunter_reward = 0
+        self.hunter_cum_reward = 0
+
 
         self.map_per_tick = np.zeros([settings.GRID_WIDTH,
                                       settings.GRID_HEIGHT], dtype=object)
@@ -62,7 +66,8 @@ class Game:
 
     def play_step(self):
 
-        self.reward = 0
+        self.prey_reward = 0
+        self.hunter_reward = 0
         
         list_of_plants = []
         list_of_preys = []
@@ -80,9 +85,9 @@ class Game:
         for _ in list_of_plants:
             _.action()
         for _ in list_of_preys:
-            self.reward += _.action()
+            self.prey_reward += _.action()
         for _ in list_of_hunters:
-            self.reward += _.action()
+            self.hunter_reward += _.action()
 
         self.plant_count = len(list_of_plants)
         self.prey_count = len(list_of_preys)
@@ -96,11 +101,21 @@ class Game:
             self.game_over = True
 
         # add the reward for one tick to the cummulative score for the whole game
-        self.cum_reward += self.reward
+        self.prey_cum_reward += self.prey_reward
+        self.hunter_cum_reward += self.hunter_reward
 
         self.n_tick_counter += 1
         # return 
-        return self.n_tick_counter, self.map_per_tick, self.plant_count, self.prey_count, self.hunter_count, self.reward, self.cum_reward, self.game_over
+        return (self.n_tick_counter,
+                 self.map_per_tick,
+                   self.plant_count,
+                     self.prey_count,
+                       self.hunter_count,
+                         self.prey_reward,
+                           self.prey_cum_reward,
+                             self.hunter_reward,
+                               self.hunter_cum_reward,
+                                 self.game_over)
     
     def get_random_free_pos(self, position):
         directions = [np.array([0, 1]), np.array([0, -1]), np.array([1, 0]), np.array([-1, 0]), np.array([1, 1]), np.array([-1, -1]), np.array([1, -1]), np.array([-1, 1])]

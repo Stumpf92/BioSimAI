@@ -11,6 +11,9 @@ class Creature:
         self.heritage_stats = heritage_stats
         self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
         self.starting_hp = self.hp
+        self.seed_state = False
+        self.seeding_timer = 0
+        self.seed_heritage_stats = None
         
         if self.game.map_per_tick[self.pos[0],self.pos[1]] != 0:
             if self.game.get_random_free_pos(self.pos):
@@ -30,13 +33,15 @@ class Creature:
                 Prey(self.simulation, self.pos, self.heritage_stats)
             elif isinstance(self, Hunter):
                 Hunter(self.simulation, self.pos, self.heritage_stats)
-        pass
 
     def kill_check(self):
         if self.hp <= 0:
             self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
             del self
 
+    def decay(self):
+        self.hp -= self.heritage_stats["decay_rate"]*self.heritage_stats["max_hp"]
+        self.kill_check()
     
     def move_and_or_eat(self, move, food):
         reward = 0
@@ -64,12 +69,19 @@ class Creature:
             new_pos[1] >= 0 and
             new_pos[1] < settings.GRID_HEIGHT):
             if isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], food):
-                # Prey fressen
+                # fressen
                 target = self.game.map_per_tick[new_pos[0],new_pos[1]]
                 self.hp = min(self.hp+target.hp, self.heritage_stats["max_hp"])
+                self.reproduce_check()
+                if isinstance(target, Plant):
+                    if random.random() < self.heritage_stats["seeding_chance"]:
+                        self.seed_heritage_stats = target.heritage_stats
+                        self.seed_state = True
+                        self.seeding_timer = 0
                 target.hp = 0
                 target.kill_check()
-                # und dann auf das Preyfeld ziehen
+
+                # und dann auf das Feld ziehen
                 self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
                 self.pos = new_pos
                 self.game.map_per_tick[self.pos[0],self.pos[1]] = self
@@ -110,6 +122,13 @@ class Creature:
                     return self.game.map_per_tick[new_pos]
                     break
         return 0
+    
+    def seed_check(self):
+        self.seeding_timer += 1
+        if self.seeding_timer == self.heritage_stats["seeding_max_timer"]:
+            Seed(self.simulation, self.pos, self.seed_heritage_stats)
+            self.seed_state = False
+            self.seeding_timer = 0
 
 
 
@@ -119,12 +138,12 @@ class Plant(Creature):
         super().__init__(simulation, pos, heritage_stats)
 
     def action(self):
-        self.kill_check()
         self.grow()
-        self.reproduce_check()
+        self.decay()
     
     def grow(self):
         self.hp = min(self.hp +self.heritage_stats["growth_rate"], self.heritage_stats["max_hp"])
+        self.reproduce_check()
 
 
 
@@ -160,14 +179,15 @@ class Prey(Creature):
         # get new state
         state_new = self.simulation.prey_agent.get_state(self, target)
         #train
+        reward = self.hp
         self.simulation.prey_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
         # remember
         self.simulation.prey_agent.remember(state_old, final_move, reward, state_new, game_over)
 
         ###extra stuff
-        self.kill_check()
-     
-        self.reproduce_check()
+        if self.seed_state:
+            self.seed_check()
+        self.decay()
 
         return reward
 
@@ -203,16 +223,20 @@ class Hunter(Creature):
         # get new state
         state_new = self.simulation.hunter_agent.get_state(self, target)
         #train
+        reward = self.hp
         self.simulation.hunter_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
         # remember
         self.simulation.hunter_agent.remember(state_old, final_move, reward, state_new, game_over)
 
         ###extra stuff
-        self.kill_check()
-     
-        self.reproduce_check()
+        self.decay()
 
         return reward
+    
+class Seed():
+
+    def __init__(self, simulation, pos, heritage_stats):
+        pass
             
     
             
