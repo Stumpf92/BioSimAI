@@ -35,15 +35,15 @@ class Creature:
                 self.game.map_per_tick[self.pos[0],self.pos[1],2] = self
     
     def reproduce_check(self):
-        # if self.hp >= self.heritage_stats["reproduction_threshold"]:
-        #     self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
-        #     if isinstance(self, Plant):
-        #         Plant(self.simulation, self.pos, self.heritage_stats)
-        #     elif isinstance(self, Prey):
-        #         Prey(self.simulation, self.pos, self.heritage_stats)
-        #     elif isinstance(self, Hunter):
-        #         Hunter(self.simulation, self.pos, self.heritage_stats)
-        pass
+        if self.hp >= self.heritage_stats["reproduction_threshold"]:
+            self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
+            if isinstance(self, Plant):
+                Plant(self.simulation, self.pos, self.heritage_stats)
+            elif isinstance(self, Prey):
+                Prey(self.simulation, self.pos, self.heritage_stats)
+            elif isinstance(self, Hunter):
+                Hunter(self.simulation, self.pos, self.heritage_stats)
+        
 
     def kill_check(self):
         if self.hp <= 0:
@@ -107,11 +107,6 @@ class Creature:
                 # target töten
                 food_target.hp = 0
                 food_target.kill_check()  
-                # if food == Plant :
-                #     self.game.map_per_tick[self.pos[0],self.pos[1],0] = 0
-                # elif food == Prey:
-                #     self.game.map_per_tick[self.pos[0],self.pos[1],1] = 0
-                
                 # und dann selbst auf das Feld ziehen
                 if isinstance(self,Plant):
                     self.game.map_per_tick[self.pos[0],self.pos[1],0] = 0
@@ -128,7 +123,7 @@ class Creature:
                
 
                             
-                # self.reproduce_check() !!!!!
+                self.reproduce_check() !!!!!
                 #belohnen fürs essen
                 reward += self.heritage_stats["eating_bonus"]
 
