@@ -2,7 +2,7 @@ import settings
 # from plant import Plant
 # from prey import Prey
 # from hunter import Hunter
-from creature import Plant, Prey, Hunter
+from creature import Plant, Prey, Hunter, Seed
 import customtkinter as ctk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
@@ -228,7 +228,7 @@ class Display:
     
     def display_quit(self): 
         # Simulationsthread und Mainthread(Display) beenden
-        self.app.simulation.running = False    
+        self.app.simulation.running = False  
         self.root.destroy()
 
     def far_backward_game(self):
@@ -257,13 +257,6 @@ class Display:
     def backward_tick(self):
         self.n_tick_counter = max(self.n_tick_counter-1,0)
     
-    def pause_display_tick(self):
-        self.pause_mode = bool(int(self.pause_mode)-1)
-        if self.pause_mode:
-            self.pause_display_button.configure(text = ">>")
-        else:
-            self.pause_display_button.configure(text = "||")
-
     def forward_tick(self):
         self.n_tick_counter = min(self.n_tick_counter+1,settings.MAX_TICKS_PER_GAME-1)
         
@@ -371,6 +364,7 @@ class Display:
         self.plant_count_array = []
         self.prey_count_array = []
         self.hunter_count_array = []
+        self.seed_count_array = []
         self.prey_reward_array = []
         self.prey_cum_reward_array = []
         self.hunter_reward_array = []
@@ -383,6 +377,7 @@ class Display:
             self.plant_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["plant_count"])
             self.prey_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_count"])
             self.hunter_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["hunter_count"])
+            self.seed_count_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["seed_count"])
             self.prey_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_reward"])
             self.prey_cum_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["prey_cum_reward"])
             self.hunter_reward_array.append(self.app.all_data[self.n_game_counter]["info_per_tick"][i]["hunter_reward"])
@@ -393,6 +388,7 @@ class Display:
         self.plant_count_array = np.array(self.plant_count_array)
         self.prey_count_array = np.array(self.prey_count_array)
         self.hunter_count_array = np.array(self.hunter_count_array)
+        self.seed_count_array = np.array(self.seed_count_array)
         self.prey_reward_array = np.array(self.prey_reward_array)
         self.prey_cum_reward_array = np.array(self.prey_cum_reward_array)
         self.hunter_reward_array = np.array(self.hunter_reward_array)
@@ -423,6 +419,7 @@ class Display:
         self.graph2.plot(self.n_tick_counter_array, self.plant_count_array, 'g', linewidth=1)
         self.graph2.plot(self.n_tick_counter_array, self.prey_count_array, 'b', linewidth=1)
         self.graph2.plot(self.n_tick_counter_array, self.hunter_count_array, 'r', linewidth=1)
+        self.graph2.plot(self.n_tick_counter_array, self.seed_count_array, 'g', linewidth=1, linestyle = "dotted")
         self.graph2_axvline = self.graph2.axvline(x=self.n_tick_counter, color='m', linestyle='dashed', linewidth=1)
 
         self.graph3.clear()        
@@ -450,7 +447,7 @@ class Display:
             
             
             # update timer
-            self.label_time.configure(text="Simulationsdauer: " + str(round(time.time() - self.start,2))+ " s")
+            self.label_time.configure(text="Laufzeit: " + str(round(time.time() - self.start,2))+ " s")
             self.label_game_counter.configure(text="Game: " + str(self.n_game_counter)+ "/"+ str(len(self.app.all_data)-1))
             self.label_tick_counter.configure(text="Tick: " + str(self.n_tick_counter)+ "/"+ str(settings.MAX_TICKS_PER_GAME-1))
             
@@ -472,34 +469,43 @@ class Display:
                 self.box.delete(i)
             for x in range(settings.GRID_WIDTH):
                 for y in range(settings.GRID_HEIGHT):
-                    body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y]
-                    if isinstance(body, Plant):                        
+                    if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,0], Plant):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,0]                     
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                        max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                        (settings.GRID_SIZE//2),
                                                         fill=self._from_rgb((0,255,0)),
                                                         tags=("delete_every_tick"))
-                    elif isinstance(body, Prey):
-                        if body.seed_state == True:
-                            self.box.create_rectangle(x*settings.GRID_SIZE,
-                                                       y*settings.GRID_SIZE,
-                                                         (x+1)*settings.GRID_SIZE,
-                                                           (y+1)*settings.GRID_SIZE,
-                                                           fill="",
-                                                            width=2,
-                                                              outline=self._from_rgb((0,255,0)),
-                                                                tags=("delete_every_tick"))
+                    if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,1], Prey):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,1]
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                        max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                        (settings.GRID_SIZE//2),
                                                         fill=self._from_rgb((0,0,255)),
                                                         tags=("delete_every_tick"))
-                    elif isinstance(body, Hunter):
+                        if body.seed_state == True:
+                            self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                            y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
+                                                            (settings.GRID_SIZE//4),
+                                                            fill=self._from_rgb((0,255,0)),
+                                                            tags=("delete_every_tick"))
+                    if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,2], Hunter):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,2]
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                        max(settings.GRID_SIZE//4,int((body.hp/body.heritage_stats["max_hp"]) *(settings.GRID_SIZE//2))),
+                                                        (settings.GRID_SIZE//2),
                                                         fill=self._from_rgb((255,0,0)),
                                                         tags=("delete_every_tick"))
+                    if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,3], Seed):
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,3]
+                        self.box.create_rectangle(x*settings.GRID_SIZE,
+                                                   y*settings.GRID_SIZE,
+                                                     (x+1)*settings.GRID_SIZE,
+                                                       (y+1)*settings.GRID_SIZE,
+                                                       fill="",
+                                                        width=2,
+                                                          outline=self._from_rgb((0,255,0)),
+                                                            tags=("delete_every_tick"))
             
 
 

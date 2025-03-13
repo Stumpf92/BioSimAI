@@ -15,28 +15,46 @@ class Creature:
         self.seeding_timer = 0
         self.seed_heritage_stats = None
         
-        if self.game.map_per_tick[self.pos[0],self.pos[1]] != 0:
+        if (self.game.map_per_tick[self.pos[0],self.pos[1],:] == [0,0,0,0]).all() == False:
             if self.game.get_random_free_pos(self.pos):
                 self.pos = self.game.get_random_free_pos(self.pos)
-                self.game.map_per_tick[self.pos[0],self.pos[1]] = self
+                if isinstance(self,Plant):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],0] = self
+                elif isinstance(self,Prey):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],1] = self
+                elif isinstance(self,Hunter):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],2] = self
             else:
                 del self
         else:
-            self.game.map_per_tick[self.pos[0],self.pos[1]] = self
+            if isinstance(self,Plant):
+                self.game.map_per_tick[self.pos[0],self.pos[1],0] = self
+            elif isinstance(self,Prey):
+                self.game.map_per_tick[self.pos[0],self.pos[1],1] = self
+            elif isinstance(self,Hunter):
+                self.game.map_per_tick[self.pos[0],self.pos[1],2] = self
     
     def reproduce_check(self):
-        if self.hp >= self.heritage_stats["reproduction_threshold"]:
-            self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
-            if isinstance(self, Plant):
-                Plant(self.simulation, self.pos, self.heritage_stats)
-            elif isinstance(self, Prey):
-                Prey(self.simulation, self.pos, self.heritage_stats)
-            elif isinstance(self, Hunter):
-                Hunter(self.simulation, self.pos, self.heritage_stats)
+        # if self.hp >= self.heritage_stats["reproduction_threshold"]:
+        #     self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
+        #     if isinstance(self, Plant):
+        #         Plant(self.simulation, self.pos, self.heritage_stats)
+        #     elif isinstance(self, Prey):
+        #         Prey(self.simulation, self.pos, self.heritage_stats)
+        #     elif isinstance(self, Hunter):
+        #         Hunter(self.simulation, self.pos, self.heritage_stats)
+        pass
 
     def kill_check(self):
         if self.hp <= 0:
-            self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
+            if isinstance(self,Plant):
+                self.game.map_per_tick[self.pos[0],self.pos[1],0] = 0
+            elif isinstance(self,Prey):
+                self.game.map_per_tick[self.pos[0],self.pos[1],1] = 0
+            elif isinstance(self,Hunter):
+                self.game.map_per_tick[self.pos[0],self.pos[1],2] = 0
+            elif isinstance(self,Seed):
+                self.game.map_per_tick[self.pos[0],self.pos[1],3] = 0
             del self
 
     def decay(self):
@@ -68,34 +86,70 @@ class Creature:
             new_pos[0] < settings.GRID_WIDTH and
             new_pos[1] >= 0 and
             new_pos[1] < settings.GRID_HEIGHT):
-            if isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], food):
-                # fressen
-                target = self.game.map_per_tick[new_pos[0],new_pos[1]]
-                self.hp = min(self.hp+target.hp, self.heritage_stats["max_hp"])
-                self.reproduce_check()
-                if isinstance(target, Plant):
+            if ((food == Plant and self.simulation.game.map_per_tick[new_pos[0], new_pos[1], 0] != 0) or 
+                (food == Prey and self.simulation.game.map_per_tick[new_pos[0], new_pos[1], 1] != 0)):
+
+                # target suchen und um target-hp heilen
+                if food == Plant :
+                    food_target = self.game.map_per_tick[new_pos[0],new_pos[1],0]
+                elif food == Prey:
+                    food_target = self.game.map_per_tick[new_pos[0],new_pos[1],1]
+
+                self.hp = min(self.hp+food_target.hp, self.heritage_stats["max_hp"])
+
+                # eventuell seeden, wenn food = Plant
+                if isinstance(food_target, Plant):
                     if random.random() < self.heritage_stats["seeding_chance"]:
-                        self.seed_heritage_stats = target.heritage_stats
+                        self.seed_heritage_stats = food_target.heritage_stats
                         self.seed_state = True
                         self.seeding_timer = 0
-                target.hp = 0
-                target.kill_check()
 
-                # und dann auf das Feld ziehen
-                self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
-                self.pos = new_pos
-                self.game.map_per_tick[self.pos[0],self.pos[1]] = self
+                # target töten
+                food_target.hp = 0
+                food_target.kill_check()  
+                # if food == Plant :
+                #     self.game.map_per_tick[self.pos[0],self.pos[1],0] = 0
+                # elif food == Prey:
+                #     self.game.map_per_tick[self.pos[0],self.pos[1],1] = 0
+                
+                # und dann selbst auf das Feld ziehen
+                if isinstance(self,Plant):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],0] = 0
+                    self.pos = new_pos
+                    self.game.map_per_tick[self.pos[0],self.pos[1],0] = self
+                elif isinstance(self,Prey):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],1] = 0
+                    self.pos = new_pos
+                    self.game.map_per_tick[self.pos[0],self.pos[1],1] = self 
+                elif isinstance(self,Hunter):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],2] = 0
+                    self.pos = new_pos
+                    self.game.map_per_tick[self.pos[0],self.pos[1],2] = self
+               
+
+                            
+                # self.reproduce_check() !!!!!
                 #belohnen fürs essen
                 reward += self.heritage_stats["eating_bonus"]
-            elif self.simulation.game.map_per_tick[new_pos[0], new_pos[1]] != 0 and isinstance(self.simulation.game.map_per_tick[new_pos[0], new_pos[1]], food) == False:
+
+            elif (self.simulation.game.map_per_tick[new_pos[0], new_pos[1],:] == [0,0,0,0]).all() == False:
                 # Punish für dämlichen Movement-Versuch
                 reward += self.heritage_stats["stupid_malus"]
 
-            elif self.simulation.game.map_per_tick[new_pos[0], new_pos[1]] == 0:
-                # eigentliche Bewegung
-                self.game.map_per_tick[self.pos[0],self.pos[1]] = 0
-                self.pos = new_pos
-                self.game.map_per_tick[self.pos[0],self.pos[1]] = self
+            elif (self.simulation.game.map_per_tick[new_pos[0], new_pos[1],:] == [0,0,0,0]).all() == True:
+                # eigentliche Bewegung, wenn Raum ist leer
+                if isinstance(self,Plant):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],0] = 0
+                    self.pos = new_pos
+                    self.game.map_per_tick[self.pos[0],self.pos[1],0] = self
+                elif isinstance(self,Prey):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],1] = 0
+                    self.pos = new_pos
+                    self.game.map_per_tick[self.pos[0],self.pos[1],1] = self 
+                elif isinstance(self,Hunter):
+                    self.game.map_per_tick[self.pos[0],self.pos[1],2] = 0
+                    self.pos = new_pos
+                    self.game.map_per_tick[self.pos[0],self.pos[1],2] = self
             
             
         else:
@@ -117,9 +171,15 @@ class Creature:
                 if (new_pos[0] >= 0 and
                      new_pos[0] < settings.GRID_WIDTH and
                        new_pos[1] >= 0 and
-                         new_pos[1] < settings.GRID_HEIGHT and
-                            isinstance(self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1]], target_type)):
-                    return self.game.map_per_tick[new_pos]
+                         new_pos[1] < settings.GRID_HEIGHT ):
+                    if target_type == Plant and isinstance(self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1],0], target_type):
+                            return self.game.map_per_tick[new_pos[0], new_pos[1], 0]
+                    elif target_type == Prey and isinstance(self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1],1], target_type):
+                            return self.game.map_per_tick[new_pos[0], new_pos[1], 1]
+                    elif target_type == Hunter and isinstance(self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1],2], target_type):
+                            return self.game.map_per_tick[new_pos[0], new_pos[1], 2]
+                    elif target_type == Seed and isinstance(self.game.map_per_tick[pos[0]+vector[0],pos[1]+vector[1],3], target_type):
+                            return self.game.map_per_tick[new_pos[0], new_pos[1], 3]    
                     break
         return 0
     
@@ -179,7 +239,7 @@ class Prey(Creature):
         # get new state
         state_new = self.simulation.prey_agent.get_state(self, target)
         #train
-        reward = self.hp
+        reward += self.hp
         self.simulation.prey_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
         # remember
         self.simulation.prey_agent.remember(state_old, final_move, reward, state_new, game_over)
@@ -223,7 +283,7 @@ class Hunter(Creature):
         # get new state
         state_new = self.simulation.hunter_agent.get_state(self, target)
         #train
-        reward = self.hp
+        reward += self.hp
         self.simulation.hunter_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
         # remember
         self.simulation.hunter_agent.remember(state_old, final_move, reward, state_new, game_over)
@@ -236,8 +296,37 @@ class Hunter(Creature):
 class Seed():
 
     def __init__(self, simulation, pos, heritage_stats):
-        pass
-            
+        self.simulation = simulation
+        self.game = simulation.game
+        self.pos = pos
+        self.heritage_stats = heritage_stats
+
+        self.seed_timer = 0
+
+        if (self.game.map_per_tick[self.pos[0],self.pos[1],:] == [0,0,0,0]).all() == True:
+            if self.game.get_random_free_pos(self.pos):
+                self.pos = self.game.get_random_free_pos(self.pos)
+                self.game.map_per_tick[self.pos[0],self.pos[1],3] = self
+            else:
+                del self
+        else:
+            self.game.map_per_tick[self.pos[0],self.pos[1],3] = self
+    
+
+    
+    def action(self):
+        self.seed_check()
+    
+
+    def seed_check(self):
+        self.seed_timer += 1
+        if self.seed_timer >= self.heritage_stats["seeding_max_timer"] and (self.game.map_per_tick[self.pos[0],self.pos[1],0:3] == [0,0,0]).all():
+            self.game.map_per_tick[self.pos[0],self.pos[1],3] = 0
+            simulation = self.simulation
+            pos = self.pos
+            heritage_stats = self.heritage_stats
+            del self
+            Plant(simulation, pos, heritage_stats)     
     
             
 

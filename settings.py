@@ -13,10 +13,10 @@ MIN_EPSILON = 0.01
 ###GAME SETTINGS
 
 MAX_TICKS_PER_GAME = 1000  # 2000
-PLANT_COUNT_START = 30  
+PLANT_COUNT_START = 20  
 PREY_COUNT_START = 10   
 HUNTER_COUNT_START = 5 
-SEED_COUNT_START = 0
+SEED_COUNT_START = 3
 
 GRID_WIDTH = 35         #40
 GRID_HEIGHT = 35      #40
@@ -72,7 +72,8 @@ def generate_plant_heritage_stats():
         "ticks_per_action": 8,
         "ticks_per_mutation": 0,
         "decay_rate": 0.001,
-        "vision_radius": 1}
+        "vision_radius": 1,
+        "seeding_max_timer": 10}
 
 
 #Prey stats

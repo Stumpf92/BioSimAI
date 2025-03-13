@@ -1,6 +1,7 @@
 import settings
 import threading
 import time
+import sys
 
 from agent import Agent
 from game import Game
@@ -37,19 +38,20 @@ class Simulation:
 
 
         while self.n_game_counter < settings.MAX_GAMES_PER_SIMULATION and self.running == True:
-            while self.app.simulation_mode == False:
+            while self.app.simulation_mode == False and self.running == True:
                 time.sleep(1)     
             start = time.time()
             self.record_mode = False    
               
 
-            n_tick_counter, map_per_tick, plant_count, prey_count, hunter_count, prey_reward, prey_cum_reward, hunter_reward, hunter_cum_reward, game_over = self.game.play_step()
+            n_tick_counter, map_per_tick, plant_count, prey_count, hunter_count, seed_count, prey_reward, prey_cum_reward, hunter_reward, hunter_cum_reward, game_over = self.game.play_step()
 
             info_per_tick.append({"n_tick_counter": n_tick_counter,
                                   "map_per_tick": map_per_tick.copy(),
                                   "plant_count": plant_count,
                                   "prey_count": prey_count,
                                   "hunter_count": hunter_count,
+                                  "seed_count" : seed_count,
                                   "prey_reward" : prey_reward,
                                   "prey_cum_reward": prey_cum_reward,
                                   "hunter_reward": hunter_reward,
@@ -57,8 +59,10 @@ class Simulation:
             if game_over:
                 # train long memory, plot result
                 self.game.reset()
-                self.prey_agent.train_long_memory()
-                self.hunter_agent.train_long_memory()
+                if settings.PREY_COUNT_START > 0:
+                    self.prey_agent.train_long_memory()
+                if settings.HUNTER_COUNT_START > 0:
+                    self.hunter_agent.train_long_memory()
                 
                 self.prey_total_score += prey_cum_reward
                 self.hunter_total_score += hunter_cum_reward
