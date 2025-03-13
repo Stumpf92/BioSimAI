@@ -13,9 +13,9 @@ MIN_EPSILON = 0.01
 ###GAME SETTINGS
 
 MAX_TICKS_PER_GAME = 1000  # 2000
-PLANT_COUNT_START = 20  
-PREY_COUNT_START = 10   
-HUNTER_COUNT_START = 5 
+PLANT_COUNT_START = 35  
+PREY_COUNT_START = 15   
+HUNTER_COUNT_START = 10 
 SEED_COUNT_START = 3
 
 GRID_WIDTH = 35         #40
@@ -92,7 +92,7 @@ def generate_prey_heritage_stats():
         "eating_bonus": 100,
         "getting_closer_bonus": 20,
         "terrain_malus_multiplier": 0,
-        "seeding_chance": 0.1,
+        "seeding_chance": 0.2,
         "seeding_max_timer": 10}
 
 #Hunter stats

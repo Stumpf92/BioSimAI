@@ -470,30 +470,30 @@ class Display:
             for x in range(settings.GRID_WIDTH):
                 for y in range(settings.GRID_HEIGHT):
                     if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,0], Plant):
-                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,0]                     
+                        body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,0]             
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                        (settings.GRID_SIZE//2),
+                                                        max(3,int((body.hp*settings.GRID_SIZE//2)/body.heritage_stats["max_hp"])),
                                                         fill=self._from_rgb((0,255,0)),
                                                         tags=("delete_every_tick"))
                     if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,1], Prey):
                         body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,1]
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                        (settings.GRID_SIZE//2),
+                                                        max(3,int((body.hp*settings.GRID_SIZE//2)/body.heritage_stats["max_hp"])),
                                                         fill=self._from_rgb((0,0,255)),
                                                         tags=("delete_every_tick"))
                         if body.seed_state == True:
                             self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                             y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                            (settings.GRID_SIZE//4),
+                                                            1,
                                                             fill=self._from_rgb((0,255,0)),
                                                             tags=("delete_every_tick"))
                     if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,2], Hunter):
                         body = self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,2]
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                         y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
-                                                        (settings.GRID_SIZE//2),
+                                                        max(3,int((body.hp*settings.GRID_SIZE//2)/body.heritage_stats["max_hp"])),
                                                         fill=self._from_rgb((255,0,0)),
                                                         tags=("delete_every_tick"))
                     if isinstance(self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["map_per_tick"][x,y,3], Seed):

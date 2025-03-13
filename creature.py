@@ -123,8 +123,7 @@ class Creature:
                
 
                             
-                self.reproduce_check() !!!!!
-                #belohnen fürs essen
+                self.reproduce_check() 
                 reward += self.heritage_stats["eating_bonus"]
 
             elif (self.simulation.game.map_per_tick[new_pos[0], new_pos[1],:] == [0,0,0,0]).all() == False:

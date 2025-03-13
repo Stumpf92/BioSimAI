@@ -5,8 +5,8 @@ from display import Display
 
 class App:
     def __init__(self):
-        self.simulation_mode = False
-        self.display_mode = False
+        self.simulation_mode = True
+        self.display_mode = True
 
 
         self.simulation = Simulation(self)
