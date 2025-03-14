@@ -30,10 +30,22 @@ class Game:
         self.hunter_reward = 0
         self.hunter_cum_reward = 0
 
-
-        self.map_per_tick = np.zeros([settings.GRID_WIDTH,
-                                      settings.GRID_HEIGHT,
-                                      4], dtype=object)
+        self.plantmap_per_tick = np.zeros([settings.GRID_WIDTH,
+                                      settings.GRID_HEIGHT], dtype=int)
+        self.preymap_per_tick = np.zeros([settings.GRID_WIDTH,
+                                      settings.GRID_HEIGHT], dtype=int)
+        self.huntermap_per_tick = np.zeros([settings.GRID_WIDTH,
+                                      settings.GRID_HEIGHT], dtype=int)
+        self.seedmap_per_tick = np.zeros([settings.GRID_WIDTH,
+                                      settings.GRID_HEIGHT], dtype=int)
+        
+        self.list_of_plants = []
+        self.list_of_preys = []
+        self.list_of_hunters = []
+        self.list_of_seeds = [] 
+        
+        
+        
         self.game_over = False
 
         # spawn creatures
@@ -63,38 +75,22 @@ class Game:
     def play_step(self):
 
         self.prey_reward = 0
-        self.hunter_reward = 0
-        
-        list_of_plants = []
-        list_of_preys = []
-        list_of_hunters = []
-        list_of_seeds = []
+        self.hunter_reward = 0        
+      
 
-        for x in range(settings.GRID_WIDTH):
-            for y in range(settings.GRID_HEIGHT):
-                if isinstance(self.map_per_tick[x,y,0], Plant):
-                    list_of_plants.append(self.map_per_tick[x,y,0])
-                elif isinstance(self.map_per_tick[x,y,1], Prey):
-                    list_of_preys.append(self.map_per_tick[x,y,1])
-                elif isinstance(self.map_per_tick[x,y,2], Hunter):
-                    list_of_hunters.append(self.map_per_tick[x,y,2])
-                elif isinstance(self.map_per_tick[x,y,3], Seed):
-                    list_of_seeds.append(self.map_per_tick[x,y,3])
-
-        
-        for _ in list_of_plants:
+        for _ in self.list_of_plants:
             _.action()
-        for _ in list_of_preys:
+        for _ in self.list_of_preys:
             self.prey_reward += _.action()
-        for _ in list_of_hunters:
+        for _ in self.list_of_hunters:
             self.hunter_reward += _.action()
-        for _ in list_of_seeds:
+        for _ in self.list_of_seeds:
             _.action()
 
-        self.plant_count = len(list_of_plants)
-        self.prey_count = len(list_of_preys)
-        self.hunter_count = len(list_of_hunters)
-        self.seed_count = len(list_of_seeds)
+        self.plant_count = len(self.list_of_plants)
+        self.prey_count = len(self.list_of_preys)
+        self.hunter_count = len(self.list_of_hunters)
+        self.seed_count = len(self.list_of_seeds)
 
         # Endcondition
         if ((self.n_tick_counter == settings.MAX_TICKS_PER_GAME-2) or
@@ -111,7 +107,10 @@ class Game:
         self.n_tick_counter += 1
         # return 
         return (self.n_tick_counter,
-                 self.map_per_tick,
+                 self.plantmap_per_tick,
+                 self.preymap_per_tick,
+                 self.huntermap_per_tick,
+                 self.seedmap_per_tick,
                    self.plant_count,
                      self.prey_count,
                        self.hunter_count,
@@ -132,7 +131,10 @@ class Game:
                 new_pos[0] < settings.GRID_WIDTH and 
                 new_pos[1] >= 0 and 
                 new_pos[1] < settings.GRID_HEIGHT and
-                (self.map_per_tick[new_pos[0],new_pos[1],:] == [0,0,0,0]).all() == True):
+                (self.plantmap_per_tick[new_pos[0],new_pos[1]] == 0 and
+                self.preymap_per_tick[new_pos[0],new_pos[1]] == 0 and
+                self.huntermap_per_tick[new_pos[0],new_pos[1]] == 0 and
+                self.seedmap_per_tick[new_pos[0],new_pos[1]] == 0)):
                 return new_pos
         
         return None

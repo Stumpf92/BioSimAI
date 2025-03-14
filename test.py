@@ -1,2 +1,11 @@
 import numpy as np
-print((np.array([0,0,0,1]) == np.array([0,0,0,1])).all())
+
+matrix = np.zeros((10*2+1,10*2+1))
+
+print(matrix.shape)
+
+pos = (2,5)
+vision_range = 10
+
+for y in range(pos[0]-vision_range,pos[0]+vision_range+1):
+    print(y)

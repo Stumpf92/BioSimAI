@@ -13,13 +13,13 @@ MIN_EPSILON = 0.01
 ###GAME SETTINGS
 
 MAX_TICKS_PER_GAME = 1000  # 2000
-PLANT_COUNT_START = 35  
-PREY_COUNT_START = 15   
-HUNTER_COUNT_START = 10 
-SEED_COUNT_START = 3
+PLANT_COUNT_START = 1  #30
+PREY_COUNT_START = 1   # 15
+HUNTER_COUNT_START = 1  #10
+SEED_COUNT_START = 0  #3
 
-GRID_WIDTH = 35         #40
-GRID_HEIGHT = 35      #40
+GRID_WIDTH = 8        #35
+GRID_HEIGHT = 8      #35
 
 
 
@@ -67,13 +67,14 @@ def generate_plant_heritage_stats():
         "max_starting_hp":50,
         "max_hp":100,
         "reproduction_threshold": 80,
-        "growth_rate": random.randint(40, 50)/100,
+        "growth_rate": random.randint(60, 80)/100,
         "max_hp_multiplier": 1.1,
         "ticks_per_action": 8,
         "ticks_per_mutation": 0,
         "decay_rate": 0.001,
-        "vision_radius": 1,
-        "seeding_max_timer": 10}
+        "seed_transport_max_timer": random.randint(6, 30),
+        "seed_sprout_max_timer": random.randint(40, 150),
+        "seed_chance": random.randint(5, 15)/100,}
 
 
 #Prey stats
@@ -86,14 +87,12 @@ def generate_prey_heritage_stats():
         "max_hp":250,
         "reproduction_threshold": 230,
         "decay_rate": 0.002,
-        "vision_radius": 10,
-        "seeding_probability": 0.05,
         "stupid_malus": -50,
         "eating_bonus": 100,
+        "eating_heal": random.randint(30, 55)/100,
         "getting_closer_bonus": 20,
         "terrain_malus_multiplier": 0,
-        "seeding_chance": 0.2,
-        "seeding_max_timer": 10}
+        "vision_radius": 3,}
 
 #Hunter stats
 HUNTER_MIN_STARTING_HEALTH_POINTS , HUNTER_MAX_STARTING_HEALTH_POINTS = 60, 100
@@ -105,12 +104,13 @@ def generate_hunter_heritage_stats():
         "max_hp":700,
         "reproduction_threshold": 600,
         "decay_rate": 0.007,
-        "vision_radius": 10,
         "seeding_probability": 0.05,
         "stupid_malus": -50,
         "eating_bonus": 100,
+        "eating_heal": random.randint(30, 55)/100,
         "getting_closer_bonus": 20,
-        "terrain_malus_multiplier": 0,}
+        "terrain_malus_multiplier": 0,
+        "vision_radius": 3,}
 
 
 #Seed stats

@@ -44,10 +44,13 @@ class Simulation:
             self.record_mode = False    
               
 
-            n_tick_counter, map_per_tick, plant_count, prey_count, hunter_count, seed_count, prey_reward, prey_cum_reward, hunter_reward, hunter_cum_reward, game_over = self.game.play_step()
+            n_tick_counter, plantmap_per_tick, preymap_per_tick, huntermap_per_tick, seedmap_per_tick, plant_count, prey_count, hunter_count, seed_count, prey_reward, prey_cum_reward, hunter_reward, hunter_cum_reward, game_over = self.game.play_step()
 
             info_per_tick.append({"n_tick_counter": n_tick_counter,
-                                  "map_per_tick": map_per_tick.copy(),
+                                  "plantmap_per_tick": plantmap_per_tick.copy(),
+                                  "preymap_per_tick": preymap_per_tick.copy(),
+                                  "huntermap_per_tick": huntermap_per_tick.copy(),
+                                  "seedmap_per_tick": seedmap_per_tick.copy(),
                                   "plant_count": plant_count,
                                   "prey_count": prey_count,
                                   "hunter_count": hunter_count,
