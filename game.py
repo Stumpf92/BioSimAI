@@ -1,12 +1,9 @@
-import random
 import settings
+import random
+random.seed(settings.SEED)
 import numpy as np
-# from plant import Plant
-# from prey import Prey
-# from hunter import Hunter
+np.random.seed(settings.SEED)
 from creature import Plant, Prey, Hunter, Seed
-from agent import Agent
-
 
 class Game:
 
@@ -48,12 +45,13 @@ class Game:
         
         self.game_over = False
 
-        # spawn creatures
+        # # spawn creatures
         for _ in range(settings.PLANT_COUNT_START):
             Plant(self.simulation,
                 np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
                 settings.generate_plant_heritage_stats()
                 )
+                
         for _ in range(settings.PREY_COUNT_START):
             Prey(self.simulation,
                 np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
@@ -70,9 +68,9 @@ class Game:
                 settings.generate_plant_heritage_stats()
                 ) 
 
-        self.n_tick_counter += 1
-
     def play_step(self):
+        
+        self.n_tick_counter += 1
 
         self.prey_reward = 0
         self.hunter_reward = 0        
@@ -92,8 +90,9 @@ class Game:
         self.hunter_count = len(self.list_of_hunters)
         self.seed_count = len(self.list_of_seeds)
 
+
         # Endcondition
-        if ((self.n_tick_counter == settings.MAX_TICKS_PER_GAME-2) or
+        if ((self.n_tick_counter == min(settings.MAX_ENDING_TICKS_PER_GAME,int((settings.MAX_STARTING_TICKS_PER_GAME -1)/min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)))) or
              (self.prey_count == 0 and settings.PREY_COUNT_START > 0) or
                (self.plant_count == 0 and settings.PLANT_COUNT_START > 0)or
                  (self.hunter_count == 0 and settings.HUNTER_COUNT_START > 0) or
@@ -104,7 +103,6 @@ class Game:
         self.prey_cum_reward += self.prey_reward
         self.hunter_cum_reward += self.hunter_reward
 
-        self.n_tick_counter += 1
         # return 
         return (self.n_tick_counter,
                  self.plantmap_per_tick,

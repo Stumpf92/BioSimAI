@@ -1,16 +1,20 @@
-import numpy as np
-import random
 import settings
+import numpy as np
+np.random.seed(settings.SEED)
+import random
+random.seed(settings.SEED)
 import opensimplex
 
 class Terrain():
 
     def __init__(self):
-        self.terrain_map = np.ones([settings.GRID_WIDTH, settings.GRID_HEIGHT])
+        self.terrain_map = np.ones([settings.GRID_HEIGHT, settings.GRID_WIDTH])
         if settings.TERRAIN_ACTIVATION_MODE == True:
             self.generate_hightmap()
             if settings.RIVER_ACTIVATION_MODE == True:
                 self.generate_river()
+        
+
 
 
     def generate_hightmap(self):

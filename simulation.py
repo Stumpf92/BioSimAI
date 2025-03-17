@@ -1,11 +1,10 @@
 import settings
-import threading
 import time
-import sys
-
+from creature import Plant, Prey, Hunter, Seed
 from agent import Agent
 from game import Game
 from terrain import Terrain
+import cProfile, pstats
 
 
 
@@ -24,8 +23,8 @@ class Simulation:
         self.record_mode = False
 
         self.terrain = Terrain()
-        self.prey_agent = Agent(self)
-        self.hunter_agent = Agent(self)
+        self.prey_agent = Agent(self, Prey)
+        self.hunter_agent = Agent(self, Hunter)
         self.game = Game(self)
 
         self.running = True
@@ -35,12 +34,15 @@ class Simulation:
         self.game.reset() ####!
         info_per_tick = []  
 
-
+        pr = cProfile.Profile()
+        pr.enable()
 
         while self.n_game_counter < settings.MAX_GAMES_PER_SIMULATION and self.running == True:
             while self.app.simulation_mode == False and self.running == True:
                 time.sleep(1)     
             start = time.time()
+            
+            
             self.record_mode = False    
               
 
@@ -67,11 +69,11 @@ class Simulation:
                 if settings.HUNTER_COUNT_START > 0:
                     self.hunter_agent.train_long_memory()
                 
-                self.prey_total_score += prey_cum_reward
+                self.prey_total_score += prey_cum_reward 
                 self.hunter_total_score += hunter_cum_reward
 
-                prey_mean_cum_end_reward = self.prey_total_score / (self.n_game_counter+1) if self.n_game_counter > 0 else 0
-                hunter_mean_cum_end_reward = self.hunter_total_score / (self.n_game_counter+1) if self.n_game_counter > 0 else 0
+                prey_mean_cum_end_reward = (self.prey_total_score / (self.n_game_counter+1)) if self.n_game_counter > 0 else 0
+                hunter_mean_cum_end_reward = (self.hunter_total_score / (self.n_game_counter+1)) if self.n_game_counter > 0 else 0
 
                 if prey_cum_reward > self.prey_positive_record:
                     self.prey_positive_record = prey_cum_reward
@@ -84,13 +86,13 @@ class Simulation:
                 info_per_game = {}
 
                 info_per_game["n_game_counter"] = self.n_game_counter
-                info_per_game["prey_cum_end_reward"] = prey_cum_reward
-                info_per_game["prey_mean_cum_end_reward"] = prey_mean_cum_end_reward
-                info_per_game["prey_positive_record"] = self.prey_positive_record                
+                info_per_game["prey_cum_end_reward"] = prey_cum_reward / info_per_tick[-1]["n_tick_counter"] #normalized, because of changing n_game_counter during simulation_time
+                info_per_game["prey_mean_cum_end_reward"] = prey_mean_cum_end_reward / info_per_tick[-1]["n_tick_counter"] #normalized, because of changing n_game_counter during simulation_time
+                info_per_game["prey_positive_record"] = self.prey_positive_record / info_per_tick[-1]["n_tick_counter"] #normalized, because of changing n_game_counter during simulation_time              
                 info_per_game["prey_epsilon_end_of_game"] = self.prey_agent.epsilon  
-                info_per_game["hunter_cum_end_reward"] = hunter_cum_reward
-                info_per_game["hunter_mean_cum_end_reward"] = hunter_mean_cum_end_reward
-                info_per_game["hunter_positive_record"] = self.hunter_positive_record
+                info_per_game["hunter_cum_end_reward"] = hunter_cum_reward / info_per_tick[-1]["n_tick_counter"] #normalized, because of changing n_game_counter during simulation_time
+                info_per_game["hunter_mean_cum_end_reward"] = hunter_mean_cum_end_reward / info_per_tick[-1]["n_tick_counter"] #normalized, because of changing n_game_counter during simulation_time
+                info_per_game["hunter_positive_record"] = self.hunter_positive_record / info_per_tick[-1]["n_tick_counter"] #normalized, because of changing n_game_counter during simulation_time
                 info_per_game["hunter_epsilon_end_of_game"] = self.hunter_agent.epsilon
 
                 info_per_game["terrain"] = self.terrain.terrain_map.copy()
@@ -104,7 +106,9 @@ class Simulation:
                 info_per_tick = []  
                 self.n_game_counter += 1
 
-
+        pr.disable()
+        results = pstats.Stats(pr).sort_stats(pstats.SortKey.CUMULATIVE)
+        results.print_stats(20)
             
 
 

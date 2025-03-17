@@ -1,6 +1,8 @@
 import settings
 import random
+random.seed(settings.SEED)
 import numpy as np
+np.random.seed(settings.SEED)
 
 class Creature:
 
@@ -44,15 +46,16 @@ class Creature:
                 self.game.list_of_hunters.append(self)
     
     def reproduce_check(self):
-        if self.hp >= self.heritage_stats["reproduction_threshold"]:
-            self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
-            if isinstance(self, Plant):
-                Plant(self.simulation, self.pos, self.heritage_stats)
-            elif isinstance(self, Prey):
-                Prey(self.simulation, self.pos, self.heritage_stats)
-            elif isinstance(self, Hunter):
-                Hunter(self.simulation, self.pos, self.heritage_stats)
-        
+        if random.random() > max(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon):
+            if self.hp >= self.heritage_stats["reproduction_threshold"]:
+                self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
+                if isinstance(self, Plant):
+                    Plant(self.simulation, self.pos, self.heritage_stats)
+                elif isinstance(self, Prey):
+                    Prey(self.simulation, self.pos, self.heritage_stats)
+                elif isinstance(self, Hunter):
+                    Hunter(self.simulation, self.pos, self.heritage_stats)
+        pass        
 
     def kill_check(self):
         if self.hp <= 0:
@@ -74,23 +77,23 @@ class Creature:
         self.hp -= self.heritage_stats["decay_rate"]*self.heritage_stats["max_hp"]
         self.kill_check()
     
-    def move_and_or_eat(self, move, food):
+    def move_and_or_eat(self, move, food): 
         reward = 0
-        if move[0] == 1: #north
+        if move[0] == 1: 
             vector = np.array([0, -1])            
-        elif move[1] == 1: # south
+        elif move[1] == 1: 
             vector = np.array([0, 1])
-        elif move[2] == 1: # east
+        elif move[2] == 1: 
             vector = np.array([1, 0])
-        elif move[3] == 1:# west
+        elif move[3] == 1:
             vector = np.array([-1, 0])
-        elif move[4] == 1:# northeast
+        elif move[4] == 1:
             vector = np.array([1, -1])
-        elif move[5] == 1:# northwest
+        elif move[5] == 1:
             vector = np.array([-1, -1])
-        elif move[6] == 1:# southeast
+        elif move[6] == 1:
             vector = np.array([1, 1])
-        elif move[7] == 1:# southwest
+        elif move[7] == 1:
             vector = np.array([-1, 1])
 
         new_pos = self.pos + vector
@@ -118,10 +121,15 @@ class Creature:
 
                 # eventuell seeden, wenn food = Plant
                 if isinstance(food_target, Plant):
-                    if random.random() < food_target.heritage_stats["seed_chance"]:
-                        self.seed_heritage_stats = food_target.heritage_stats
-                        self.seed_state = True
-                        self.seed_transport_timer = 0
+                    if random.random() > max(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon):
+                        if random.random() < food_target.heritage_stats["seed_chance"]:
+                            self.seed_heritage_stats = food_target.heritage_stats
+                            self.seed_state = True
+                            self.seed_transport_timer = 0
+                    if random.random() < max(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon):
+                        Plant(self.simulation,
+                            np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
+                            settings.generate_plant_heritage_stats())
 
                 # target töten
                 food_target.hp = 0
@@ -143,13 +151,13 @@ class Creature:
 
                             
                 self.reproduce_check() 
-                reward += self.heritage_stats["eating_bonus"]
+                reward += self.heritage_stats["eating_reward_bonus"]
 
             elif (self.game.plantmap_per_tick[new_pos[0], new_pos[1]] != 0 or 
                   self.game.preymap_per_tick[new_pos[0], new_pos[1]] != 0 or 
                   self.game.huntermap_per_tick[new_pos[0], new_pos[1]] != 0):
                 # Punish für dämlichen Movement-Versuch
-                reward += self.heritage_stats["stupid_malus"]
+                reward += self.heritage_stats["friend_collision_reward_malus"]
 
             elif (self.game.plantmap_per_tick[new_pos[0], new_pos[1]] == 0 or 
                   self.game.preymap_per_tick[new_pos[0], new_pos[1]] == 0 or 
@@ -171,42 +179,9 @@ class Creature:
             
             
         else:
-            reward += self.heritage_stats["stupid_malus"]
+            reward += self.heritage_stats["wall_collision_reward_malus"]
         
         return reward
-    
-    def detect_nearest_target(self, target_type, distance_range = max(settings.GRID_WIDTH, settings.GRID_HEIGHT)):
-        pos = self.pos
-        for i in range(1,distance_range+1):
-            vectors = []
-            for x in range(-i,i+1):
-                for y in range(-i,i+1):
-                    vectors.append(np.array([x,y]))
-            random.shuffle(vectors)
-            while len(vectors) > 0:
-                vector = vectors.pop()
-                new_pos = (pos[0] + vector[0], pos[1] + vector[1])
-                if (new_pos[0] >= 0 and
-                     new_pos[0] < settings.GRID_WIDTH and
-                       new_pos[1] >= 0 and
-                         new_pos[1] < settings.GRID_HEIGHT ):
-                    if target_type == Plant and self.game.plantmap_per_tick[new_pos[0], new_pos[1]] == 1:
-                        for element in self.game.list_of_plants:
-                            if element.pos[0] == new_pos[0] and element.pos[1] == new_pos[1]:
-                                return element
-                    elif target_type == Prey and self.game.preymap_per_tick[new_pos[0], new_pos[1]] == 1:
-                        for element in self.game.list_of_preys:
-                            if element.pos[0] == new_pos[0] and element.pos[1] == new_pos[1]:
-                                return element
-                    elif target_type == Hunter and self.game.huntermap_per_tick[new_pos[0], new_pos[1]] == 1:
-                        for element in self.game.list_of_hunters:
-                            if element.pos[0] == new_pos[0] and element.pos[1] == new_pos[1]:
-                                return element
-                    elif target_type == Seed and self.game.seedmap_per_tick[new_pos[0], new_pos[1]] == 1:
-                        for element in self.game.list_of_seeds:
-                            if element.pos[0] == new_pos[0] and element.pos[1] == new_pos[1]:
-                                return element
-        return 0
     
     def seed_check(self):
         self.seed_transport_timer += 1
@@ -215,39 +190,57 @@ class Creature:
             self.seed_state = False
             self.seed_transport_timer = 0
     
-    def calc_danger_matrix(self, vision_radius):
-        matrix = np.zeros((vision_radius*2+1,vision_radius*2+1))
-        origin_matrix = (self.pos[0]-vision_radius, self.pos[1]-vision_radius)        
-        for y_projection in range(matrix.shape[1]):
-            for x_projection in range(matrix.shape[1]):
-                if (origin_matrix[0]+x_projection >= 0 and
-                    origin_matrix[0]+x_projection < settings.GRID_WIDTH and
-                    origin_matrix[1]+y_projection >= 0 and
-                    origin_matrix[1]+y_projection < settings.GRID_HEIGHT):
-                    if self.game.plantmap_per_tick[origin_matrix[0]+x_projection,origin_matrix[1]+y_projection] == 1:
+    def calc_danger_matrix(self, vision_radius, reward_radius):
+        vision_matrix = np.zeros((vision_radius*2+1,vision_radius*2+1))
+        reward_matrix = np.zeros((reward_radius*2+1,reward_radius*2+1))
+
+        origin_vision_matrix = (self.pos[0]-vision_radius, self.pos[1]-vision_radius)        
+        for y_vision_matrix in range(vision_matrix.shape[1]):
+            for x_vision_matrix in range(vision_matrix.shape[0]):
+                if (origin_vision_matrix[0]+x_vision_matrix >= 0 and
+                    origin_vision_matrix[0]+x_vision_matrix < settings.GRID_WIDTH and
+                    origin_vision_matrix[1]+y_vision_matrix >= 0 and
+                    origin_vision_matrix[1]+y_vision_matrix < settings.GRID_HEIGHT):
+                    if self.game.plantmap_per_tick[origin_vision_matrix[0]+x_vision_matrix,origin_vision_matrix[1]+y_vision_matrix] == 1:
                         if self.food == Plant:
-                            matrix[x_projection,y_projection] = self.heritage_stats["eating_bonus"]
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["eating_reward_bonus"]
                         elif self.enemy == Plant:
-                            matrix[x_projection,y_projection] = self.heritage_stats["eating_bonus"] *-1
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["enemy_collision_reward_malus"] 
                         elif self.friend == Plant:
-                            matrix[x_projection,y_projection] = self.heritage_stats["stupid_malus"]
-                    elif self.game.preymap_per_tick[origin_matrix[0]+x_projection,origin_matrix[1]+y_projection] == 1:
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["friend_collision_reward_malus"]
+                    elif self.game.preymap_per_tick[origin_vision_matrix[0]+x_vision_matrix,origin_vision_matrix[1]+y_vision_matrix] == 1:
                         if self.food == Prey:
-                            matrix[x_projection,y_projection] = self.heritage_stats["eating_bonus"]
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["eating_reward_bonus"]
                         elif self.enemy == Prey:
-                            matrix[x_projection,y_projection] = self.heritage_stats["eating_bonus"] *-1
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["enemy_collision_reward_malus"]  *-1
                         elif self.friend == Prey:
-                            matrix[x_projection,y_projection] = self.heritage_stats["stupid_malus"]
-                    elif self.game.huntermap_per_tick[origin_matrix[0]+x_projection,origin_matrix[1]+y_projection] == 1:
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["friend_collision_reward_malus"]
+                    elif self.game.huntermap_per_tick[origin_vision_matrix[0]+x_vision_matrix,origin_vision_matrix[1]+y_vision_matrix] == 1:
                         if self.food == Hunter:
-                            matrix[x_projection,y_projection] = self.heritage_stats["eating_bonus"]
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["eating_reward_bonus"]
                         elif self.enemy == Hunter:
-                            matrix[x_projection,y_projection] = self.heritage_stats["eating_bonus"] *-1
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["enemy_collision_reward_malus"]  *-1
                         elif self.friend == Hunter:
-                            matrix[x_projection,y_projection] = self.heritage_stats["stupid_malus"]
+                            vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["friend_collision_reward_malus"]
                 else:                    
-                    matrix[x_projection,y_projection] = self.heritage_stats["stupid_malus"]
-        return matrix
+                    vision_matrix[x_vision_matrix,y_vision_matrix] = self.heritage_stats["wall_collision_reward_malus"]
+
+
+        multiplier_matrix = np.ones((2*reward_radius+1, 2*reward_radius+1))
+        center_coord = (2*reward_radius+1)//2
+        distance = 0
+
+        while center_coord - distance > 0:
+            distance += 1
+            multiplier_matrix[center_coord-distance,:] = 1/(distance+1)
+            multiplier_matrix[center_coord+distance,:] = 1/(distance+1)
+            multiplier_matrix[:,center_coord - distance] = 1/(distance+1)
+            multiplier_matrix[:,center_coord + distance] = 1/(distance+1)
+        
+        reward_matrix = vision_matrix[center_coord-reward_radius+1:center_coord+reward_radius+2,center_coord-reward_radius+1:center_coord+reward_radius+2] * multiplier_matrix
+            
+        reward_matrix_sum = reward_matrix.sum()
+        return vision_matrix, reward_matrix, reward_matrix_sum
 
 class Plant(Creature):
 
@@ -272,7 +265,7 @@ class Prey(Creature):
 
     def __init__(self, simulation, pos, heritage_stats):
         super().__init__(simulation, pos, heritage_stats)
-        self.friend = None
+        self.friend = Prey
         self.enemy = Hunter
         self.food = Plant
     
@@ -281,29 +274,21 @@ class Prey(Creature):
 
         reward = 0
         ##identify closest target
-        target = self.detect_nearest_target(Plant)
-        #danger_matrix = self.calc_danger_matrix(self.heritage_stats["vision_radius"])
+        # target = self.detect_nearest_target(Plant)
+        danger_matrix_old, reward_matrix_old, reward_matrix_sum_old = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])
+        
+        
         # get old state
-        state_old = self.simulation.prey_agent.get_state(self, target)
-        if target !=0:
-            distance_before = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
+        state_old = self.simulation.prey_agent.get_state(danger_matrix_old)
         # get move
         final_move = self.simulation.prey_agent.get_action(state_old)
         #make the move       
         reward += self.move_and_or_eat(final_move, self.food)
-        if target !=0:
-            distance_after = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
-        #rewarding for moving closer
-        if target !=0:
-            if distance_before > distance_after:
-                reward += self.heritage_stats["getting_closer_bonus"]
-        #punish for moving away
-        else:
-            reward += -10
         # get new state
-        state_new = self.simulation.prey_agent.get_state(self, target)
+        danger_matrix_new, reward_matrix_new, reward_matrix_sum_new = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])        
+        state_new = self.simulation.prey_agent.get_state(danger_matrix_new)
         #train
-        reward += self.hp
+        #reward += reward_matrix_sum_new
         self.simulation.prey_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
         # remember
         self.simulation.prey_agent.remember(state_old, final_move, reward, state_new, game_over)
@@ -328,26 +313,28 @@ class Hunter(Creature):
 
         reward = 0
         ##identify closest target
-        target = self.detect_nearest_target(Prey)
+        # target = self.detect_nearest_target(Prey)
+        danger_matrix, reward_matrix, reward_matrix_sum = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])
         # get old state
-        state_old = self.simulation.hunter_agent.get_state(self, target)
-        if target !=0:
-            distance_before = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
+        state_old = self.simulation.hunter_agent.get_state(danger_matrix)
+        # if target !=0:
+        #     distance_before = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
         # get move
         final_move = self.simulation.hunter_agent.get_action(state_old)
         #make the move       
         reward += self.move_and_or_eat(final_move, self.food)
-        if target !=0:
-            distance_after = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
+        # if target !=0:
+        #     distance_after = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
         #rewarding for moving closer
-        if target !=0:
-            if distance_before > distance_after:
-                reward += self.heritage_stats["getting_closer_bonus"]
+        # if target !=0:
+        #     if distance_before > distance_after:
+        #         reward += self.heritage_stats["getting_closer_bonus"]
         #punish for moving away
-        else:
-            reward += -10
+        # else:
+        #     reward += -10
         # get new state
-        state_new = self.simulation.hunter_agent.get_state(self, target)
+        danger_matrix, reward_matrix, reward_matrix_sum = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])
+        state_new = self.simulation.hunter_agent.get_state(danger_matrix)
         #train
         reward += self.hp
         self.simulation.hunter_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)

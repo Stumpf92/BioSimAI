@@ -1,21 +1,30 @@
+import settings
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+torch.manual_seed(settings.SEED)
 import os
 import numpy as np
+np.random.seed(settings.SEED)
 from datetime import datetime
 
 class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, hidden_size_1, hidden_size_2, hidden_size_3, output_size):
         super().__init__()
         #### Interessant ist Flattenlayer , weil multifimensionaler Input Möglich wi
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, output_size)
+        self.linear1 = nn.Linear(input_size, hidden_size_1)
+        self.linear2 = nn.Linear(hidden_size_1, hidden_size_2)
+        self.linear3 = nn.Linear(hidden_size_2, hidden_size_3)
+        self.linear4 = nn.Linear(hidden_size_3, output_size)
 
+        
     def forward(self, x):
+        x = x.to(settings.DEVICE)
         x = F.relu(self.linear1(x))
-        x = self.linear2(x)
+        x = F.relu(self.linear2(x))
+        x = F.relu(self.linear3(x))
+        x = self.linear4(x)
         return x
 
     def save(self): 
@@ -44,6 +53,7 @@ class Linear_QNet(nn.Module):
 
 class QTrainer:
     def __init__(self, model, lr, gamma):
+        
         self.lr = lr
         self.gamma = gamma
         self.model = model
@@ -51,42 +61,33 @@ class QTrainer:
         self.criterion = nn.MSELoss()
 
     def train_step(self, state, action, reward, next_state, done):
-        state = np.array(state)
-        state = torch.tensor(state, dtype=torch.float)
-        next_state = np.array(next_state)
-        next_state = torch.tensor(next_state, dtype=torch.float)
-        action = np.array(action)
-        action = torch.tensor(action, dtype=torch.long)
-        reward = np.array(reward)
-        reward = torch.tensor(reward, dtype=torch.float)
-        # (n, x)
+        state = torch.tensor(np.array(state), dtype=torch.float, device=settings.DEVICE)
+        next_state = torch.tensor(np.array(next_state), dtype=torch.float, device=settings.DEVICE)
+        action = torch.tensor(np.array(action), dtype=torch.long, device=settings.DEVICE)
+        reward = torch.tensor(np.array(reward), dtype=torch.float, device=settings.DEVICE)
+        done = torch.tensor(np.array(done), dtype=torch.bool, device=settings.DEVICE)
 
         if len(state.shape) == 1:
-            # (1, x)
-            state = torch.unsqueeze(state, 0)
-            next_state = torch.unsqueeze(next_state, 0)
-            action = torch.unsqueeze(action, 0)
-            reward = torch.unsqueeze(reward, 0)
-            done = (done, )
+            state, next_state, action, reward, done = [t.unsqueeze(0) for t in [state, next_state, action, reward, done]]
 
-        # 1: predicted Q values with current state
+        # Vorhersage für aktuellen Zustand
         pred = self.model(state)
 
+        # Zielwerte initialisieren
         target = pred.clone()
-        for idx in range(len(done)):
-            Q_new = reward[idx]
-            if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
 
-            target[idx][torch.argmax(action[idx]).item()] = Q_new
-    
-        # 2: Q_new = r + y * max(next_predicted Q value) -> only do this if not done
-        # pred.clone()
-        # preds[argmax(action)] = Q_new
+        # Berechne Q-Werte effizienter
+        with torch.no_grad():
+            max_next_Q = torch.max(self.model(next_state), dim=1)[0]
+            Q_new = reward + (self.gamma * max_next_Q * ~done)
+
+        # Aktualisiere nur die Werte für die getätigten Aktionen
+        target[range(len(action)), action.argmax(dim=1)] = Q_new
+
+        # Backpropagation
         self.optimizer.zero_grad()
         loss = self.criterion(target, pred)
         loss.backward()
-
         self.optimizer.step()
 
 

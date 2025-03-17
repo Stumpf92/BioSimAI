@@ -8,6 +8,7 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg)
 from matplotlib.figure import Figure
 import numpy as np
+np.random.seed(settings.SEED)
 import time
 
 
@@ -27,7 +28,8 @@ class Display:
         ctk.set_default_color_theme("blue") 
 
         self.root = ctk.CTk()  
-        self.root._state_before_windows_set_titlebar_color = 'zoomed'
+        #maximized
+        # self.root._state_before_windows_set_titlebar_color = 'zoomed'
         self.root.title("BioSim")
 
         self.root.columnconfigure(0,weight=1)
@@ -178,7 +180,7 @@ class Display:
 
 
 
-        self.slider = ctk.CTkSlider(master=self.bot_right_frame1, from_=1, to=100, number_of_steps=100, command=self.update_slider, height=29)
+        self.slider = ctk.CTkSlider(master=self.bot_right_frame1, from_=1, to=200, number_of_steps=100, command=self.update_slider, height=29)
         self.slider.pack(padx = 15 )
 
         far_backward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="<<--",command=self.far_backward_tick, width = 45)
@@ -190,6 +192,9 @@ class Display:
         forward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="-->",command=self.forward_tick, width = 45)
         forward_tick_button.pack(padx = 15, side= "right")
 
+        pause_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="||",command=self.pause_tick, width = 45)
+        pause_tick_button.pack(padx = 15, side= "right")
+
         backward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="<--",command=self.backward_tick, width = 45)
         backward_tick_button.pack(padx = 15, side="right")
 
@@ -197,6 +202,7 @@ class Display:
         self.counter = 0
         self.mode_slider.set(0)
         self.set_mode(0)
+
 
         def cancel_current_game(self):
             self.app.simulation.game.game_over = True
@@ -211,6 +217,8 @@ class Display:
 
     
     
+    def pause_tick(self):
+        self.pause_mode = bool(int(self.pause_mode - 1))
 
     def set_mode(self, value):
         if value == 0:
@@ -266,10 +274,10 @@ class Display:
         self.n_tick_counter = max(self.n_tick_counter-1,0)
     
     def forward_tick(self):
-        self.n_tick_counter = min(self.n_tick_counter+1,settings.MAX_TICKS_PER_GAME-1)
+        self.n_tick_counter = min(self.n_tick_counter+1,self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"])
         
     def far_forward_tick(self):
-        self.n_tick_counter = min(self.n_tick_counter+10,settings.MAX_TICKS_PER_GAME-1)
+        self.n_tick_counter = min(self.n_tick_counter+10,self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"])
                 
 
 
@@ -408,8 +416,8 @@ class Display:
         if self.app.all_data:
             terrain = self.app.all_data[0]["terrain"]
 
-            for x in range(settings.GRID_WIDTH):
-                for y in range(settings.GRID_HEIGHT):
+            for y in range(settings.GRID_HEIGHT):
+                for x in range(settings.GRID_WIDTH):
                     color = (int(settings.TERRAIN_BASE_COLOR[0]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
                             int(settings.TERRAIN_BASE_COLOR[1]+terrain[x,y]*settings.TERRAIN_COLOR_STEP),
                                 int(settings.TERRAIN_BASE_COLOR[2]+terrain[x,y]*settings.TERRAIN_COLOR_STEP))
@@ -457,7 +465,7 @@ class Display:
             # update timer
             self.label_time.configure(text="Laufzeit: " + str(round(time.time() - self.start,2))+ " s")
             self.label_game_counter.configure(text="Game: " + str(self.n_game_counter)+ "/"+ str(len(self.app.all_data)-1))
-            self.label_tick_counter.configure(text="Tick: " + str(self.n_tick_counter)+ "/"+ str(settings.MAX_TICKS_PER_GAME-1))
+            self.label_tick_counter.configure(text="Tick: " + str(self.n_tick_counter)+ "/"+ str(self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"]))
             
             
             
@@ -478,15 +486,15 @@ class Display:
 
             for i in self.box.find_withtag("delete_every_tick"):
                 self.box.delete(i)
-            for x in range(settings.GRID_WIDTH):
-                for y in range(settings.GRID_HEIGHT):
-                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["plantmap_per_tick"][x,y] == 1:                        
+            for y in range(settings.GRID_HEIGHT):
+                for x in range(settings.GRID_WIDTH):
+                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["plantmap_per_tick"][y,x] == 1:                        
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     settings.GRID_SIZE//3,
                                                     fill=self._from_rgb((0,255,0)),
                                                     tags=("delete_every_tick"))
-                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["preymap_per_tick"][x,y] == 1:
+                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["preymap_per_tick"][y,x] == 1:
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     settings.GRID_SIZE//3,
@@ -498,13 +506,13 @@ class Display:
                                 #                                     1,
                                 #                                     fill=self._from_rgb((0,255,0)),
                                 #                                     tags=("delete_every_tick"))
-                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["huntermap_per_tick"][x,y] == 1:
+                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["huntermap_per_tick"][y,x] == 1:
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     settings.GRID_SIZE//3,
                                                     fill=self._from_rgb((255,0,0)),
                                                     tags=("delete_every_tick"))
-                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["seedmap_per_tick"][x,y] == 1:
+                    if self.app.all_data[self.n_game_counter]["info_per_tick"][self.n_tick_counter]["seedmap_per_tick"][y,x] == 1:
                         self.box.create_aa_circle(x*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     y*settings.GRID_SIZE+ settings.GRID_SIZE//2,
                                                     settings.GRID_SIZE//4,
@@ -519,7 +527,7 @@ class Display:
             
             max_tick_counter_for_this_game = self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"]
 
-            if self.n_tick_counter >= max_tick_counter_for_this_game:
+            if self.n_tick_counter > max_tick_counter_for_this_game:
                 if self.latest_mode:
                     self.n_game_counter = len(self.app.all_data)-1
                 else:

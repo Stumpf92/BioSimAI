@@ -1,25 +1,28 @@
 import random
+import torch
+
+#OVERALL
+#SEED = 3
+SEED = random.randint(0, 1000)
+random.seed(SEED)
+
+#DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cpu")
 
 ####SIMULATION SETTINGS
-
-MAX_GAMES_PER_SIMULATION = 10000000
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001    # 0.001
-GAMMA = 0.9
-EPSILON_DECAY = 0.999995     #0.99995
-MIN_EPSILON = 0.01
+MAX_GAMES_PER_SIMULATION = 1000
 
 ###GAME SETTINGS
 
-MAX_TICKS_PER_GAME = 1000  # 2000
-PLANT_COUNT_START = 1  #30
-PREY_COUNT_START = 1   # 15
-HUNTER_COUNT_START = 1  #10
+MAX_STARTING_TICKS_PER_GAME = 100  # 1000
+MAX_ENDING_TICKS_PER_GAME = 1000
+PLANT_COUNT_START = 30  #30
+PREY_COUNT_START = 15   # 15
+HUNTER_COUNT_START = 0  #10
 SEED_COUNT_START = 0  #3
 
-GRID_WIDTH = 8        #35
-GRID_HEIGHT = 8      #35
+GRID_WIDTH = 35       #35
+GRID_HEIGHT = 35     #35
 
 
 
@@ -59,7 +62,6 @@ WATER_COLOR = (0,0,255)
 
 
 #Plant stats
-#PLANT_MIN_STARTING_HEALTH_POINTS, PLANT_MAX_STARTING_HEALTH_POINTS = 5, 50
 def generate_plant_heritage_stats():
     return {
         "generation": 0,
@@ -78,7 +80,6 @@ def generate_plant_heritage_stats():
 
 
 #Prey stats
-#PREY_MIN_STARTING_HEALTH_POINTS, PREY_MAX_STARTING_HEALTH_POINTS = 60, 100
 def generate_prey_heritage_stats():     
     return {
         "generation": 0,
@@ -87,15 +88,23 @@ def generate_prey_heritage_stats():
         "max_hp":250,
         "reproduction_threshold": 230,
         "decay_rate": 0.002,
-        "stupid_malus": -50,
-        "eating_bonus": 100,
+        "wall_collision_reward_malus": -2, #-2
+        "friend_collision_reward_malus": -1, #-0.1
+        "enemy_collision_reward_malus": -5,
+        "eating_reward_bonus": 5,
         "eating_heal": random.randint(30, 55)/100,
-        "getting_closer_bonus": 20,
         "terrain_malus_multiplier": 0,
-        "vision_radius": 3,}
+        "vision_radius": 5,
+        "reward_radius": 1,
+        "max_memory" :100000,
+        "batch_size" :1000,
+        "lr" :0.001,
+        "gamma" :0.9,
+        "epsilon_decay" :0.999997,
+        "min_epsilon" :0.01,
+        }
 
 #Hunter stats
-HUNTER_MIN_STARTING_HEALTH_POINTS , HUNTER_MAX_STARTING_HEALTH_POINTS = 60, 100
 def generate_hunter_heritage_stats():
     return {
         "generation": 0,
@@ -105,12 +114,21 @@ def generate_hunter_heritage_stats():
         "reproduction_threshold": 600,
         "decay_rate": 0.007,
         "seeding_probability": 0.05,
-        "stupid_malus": -50,
-        "eating_bonus": 100,
+        "wall_collision_reward_malus": -100,
+        "friend_collision_reward_malus": -20,
+        "eating_reward_bonus": 400,
         "eating_heal": random.randint(30, 55)/100,
         "getting_closer_bonus": 20,
         "terrain_malus_multiplier": 0,
-        "vision_radius": 3,}
+        "vision_radius": 2,
+        "vision_radius": 1,
+        "max_memory" :100000,
+        "batch_size" :1000,
+        "lr" :0.001,
+        "gamma" :0.96,
+        "epsilon_decay" :0.999995,
+        "min_epsilon" :0.01,
+        }
 
 
 #Seed stats

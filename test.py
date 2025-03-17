@@ -1,11 +1,11 @@
-import numpy as np
+import random
 
-matrix = np.zeros((10*2+1,10*2+1))
+random.seed(3)
 
-print(matrix.shape)
+def bla():
+    c = random.randint(1, 100)
+    d = random.randint(1, 100)
+    print(c,d)
 
-pos = (2,5)
-vision_range = 10
-
-for y in range(pos[0]-vision_range,pos[0]+vision_range+1):
-    print(y)
+for i in range(5):
+    bla()
