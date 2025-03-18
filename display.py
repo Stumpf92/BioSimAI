@@ -28,8 +28,7 @@ class Display:
         ctk.set_default_color_theme("blue") 
 
         self.root = ctk.CTk()  
-        #maximized
-        # self.root._state_before_windows_set_titlebar_color = 'zoomed'
+        # self.root._state_before_windows_set_titlebar_color = 'zoomed'  # maximizing the UI window
         self.root.title("BioSim")
 
         self.root.columnconfigure(0,weight=1)
@@ -65,7 +64,6 @@ class Display:
 
         
         # BOT LEFT
-        
 
         self.bot_left_frame = ctk.CTkFrame(self.root)
         self.bot_left_frame.grid(column=0, row= 1, sticky= "n")
@@ -93,12 +91,7 @@ class Display:
 
 
 
-
-
-
-
-        # TOP MIDDLE
-        
+        # TOP MIDDLE        
         
         self.top_middle_frame = ctk.CTkFrame(self.root)
         self.top_middle_frame.grid(column=1, row= 0, sticky= "n")
@@ -136,15 +129,11 @@ class Display:
         quit_button = ctk.CTkButton(master=self.bot_middle_frame,text="quit",command=self.display_quit)
         quit_button.grid(padx = 15 , pady= 15, column=1, row= 1,)
 
-        
-
-
+      
         # TOP RIGHT
 
         self.top_right_frame = ctk.CTkFrame(self.root)
         self.top_right_frame.grid(column=2, row= 0, sticky= "n")
-
-
 
         fig2 = Figure( dpi=100, frameon=True)
         fig2.set_size_inches(settings.DIAGRAM_WIDTH,settings.DIAGRAM_HEIGHT)
@@ -165,7 +154,6 @@ class Display:
         self.diagram6.get_tk_widget().pack(padx = 15 , pady= 15)
 
 
-
         # BOT RIGHT
 
         self.bot_right_frame = ctk.CTkFrame(self.root)
@@ -176,9 +164,6 @@ class Display:
 
         self.bot_right_frame2 = ctk.CTkFrame(self.bot_right_frame)
         self.bot_right_frame2.pack(padx = 15 , pady= 15)
-
-
-
 
         self.slider = ctk.CTkSlider(master=self.bot_right_frame1, from_=1, to=200, number_of_steps=100, command=self.update_slider, height=29)
         self.slider.pack(padx = 15 )
@@ -198,8 +183,8 @@ class Display:
         backward_tick_button = ctk.CTkButton(master=self.bot_right_frame2,text="<--",command=self.backward_tick, width = 45)
         backward_tick_button.pack(padx = 15, side="right")
 
-
-        self.counter = 0
+        # Sets the starting mode , simulation active and UI in sleep 
+        
         self.mode_slider.set(0)
         self.set_mode(0)
 

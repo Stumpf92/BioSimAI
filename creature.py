@@ -3,6 +3,7 @@ import random
 random.seed(settings.SEED)
 import numpy as np
 np.random.seed(settings.SEED)
+import math
 
 class Creature:
 
@@ -46,7 +47,7 @@ class Creature:
                 self.game.list_of_hunters.append(self)
     
     def reproduce_check(self):
-        if random.random() > max(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon):
+        if random.random() > math.sqrt(min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)):
             if self.hp >= self.heritage_stats["reproduction_threshold"]:
                 self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
                 if isinstance(self, Plant):
@@ -121,16 +122,21 @@ class Creature:
 
                 # eventuell seeden, wenn food = Plant
                 if isinstance(food_target, Plant):
-                    if random.random() > max(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon):
+                    if random.random() > math.sqrt(min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)):
                         if random.random() < food_target.heritage_stats["seed_chance"]:
                             self.seed_heritage_stats = food_target.heritage_stats
                             self.seed_state = True
                             self.seed_transport_timer = 0
-                    if random.random() < max(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon):
+                    if random.random() < math.sqrt(min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)):
                         Plant(self.simulation,
                             np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
                             settings.generate_plant_heritage_stats())
-
+                        
+                if isinstance(food_target, Prey):
+                    if random.random() < math.sqrt(min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)):
+                        Prey(self.simulation,
+                            np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
+                            settings.generate_plant_heritage_stats())
                 # target töten
                 food_target.hp = 0
                 food_target.kill_check()  

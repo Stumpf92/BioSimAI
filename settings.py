@@ -69,7 +69,7 @@ def generate_plant_heritage_stats():
         "max_starting_hp":50,
         "max_hp":100,
         "reproduction_threshold": 80,
-        "growth_rate": random.randint(60, 80)/100,
+        "growth_rate": random.randint(80, 105)/100,
         "max_hp_multiplier": 1.1,
         "ticks_per_action": 8,
         "ticks_per_mutation": 0,
