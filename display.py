@@ -187,6 +187,7 @@ class Display:
         
         self.mode_slider.set(0)
         self.set_mode(0)
+        
 
 
         def cancel_current_game(self):
