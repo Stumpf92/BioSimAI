@@ -30,8 +30,9 @@ class Simulation:
         self.running = True
 
     def train(self):
+        # eigentlicher Trainingsloop
 
-        self.game.reset() ####!
+        self.game.reset()
         info_per_tick = []  
 
         pr = cProfile.Profile()
@@ -40,11 +41,9 @@ class Simulation:
         while self.n_game_counter < settings.MAX_GAMES_PER_SIMULATION and self.running == True:
             while self.app.simulation_mode == False and self.running == True:
                 time.sleep(1)     
-            start = time.time()
+            start = time.time()           
             
-            
-            self.record_mode = False    
-              
+            self.record_mode = False                 
 
             n_tick_counter, plantmap_per_tick, preymap_per_tick, huntermap_per_tick, seedmap_per_tick, plant_count, prey_count, hunter_count, seed_count, prey_reward, prey_cum_reward, hunter_reward, hunter_cum_reward, game_over = self.game.play_step()
 
@@ -61,6 +60,7 @@ class Simulation:
                                   "prey_cum_reward": prey_cum_reward,
                                   "hunter_reward": hunter_reward,
                                   "hunter_cum_reward": hunter_cum_reward,})
+            
             if game_over:
                 # train long memory, plot result
                 self.game.reset()
@@ -81,7 +81,6 @@ class Simulation:
                 if hunter_cum_reward > self.hunter_positive_record:
                     self.hunter_positive_record = hunter_cum_reward
                     self.record_mode = True
-
 
                 info_per_game = {}
 

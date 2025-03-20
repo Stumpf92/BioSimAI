@@ -18,18 +18,21 @@ class Terrain():
 
 
     def generate_hightmap(self):
+        # generiert eine Höhenkarte
         opensimplex.seed(settings. TERRAIN_SEED)
         for x in range(settings.GRID_WIDTH):
             for y in range(settings.GRID_HEIGHT):
                 self.terrain_map[x,y] = int((opensimplex.noise2(x/settings.TERRAIN_NOISE_ZOOM, y/settings.TERRAIN_NOISE_ZOOM)+1)*(settings.TERRAIN_MAX_HEIGHT)/2)
 
     def generate_river(self):
+        # generiert einen Fluss
         starting_tile = random.choice(self.find_lowest_edge_tiles())[1]
         print(starting_tile)
         self.terrain_map[starting_tile[0],starting_tile[1]] = -1
         pass
     
     def find_lowest_edge_tiles(self):
+        # findet den niegrigsten Tile am Rand der Karte
         values_and_tiles = []
         for x in range(settings.GRID_WIDTH):
             values_and_tiles.append([self.terrain_map[x,0], [x,0]])

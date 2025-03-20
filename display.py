@@ -204,9 +204,11 @@ class Display:
     
     
     def pause_tick(self):
+        # pausiert n_tick und visualisierung
         self.pause_mode = bool(int(self.pause_mode - 1))
 
     def set_mode(self, value):
+        # pausiert/aktiviert die eigentliche Simulation und die Visualisierung
         if value == 0:
             self.app.display_mode = False
             self.app.simulation_mode = True
@@ -216,15 +218,17 @@ class Display:
 
 
     def set_latest_mode(self):
+        # latest_mode = True zeigt immer die neuste Simualtion, also mit maximalern n_game_counter in all_data
         self.latest_mode = not self.latest_mode
 
-    def load(self):
+    def load(self):        
         self.app.simulation.prey_agent.model.load()
 
     def save(self):
         self.app.simulation.prey_agent.model.save()
     
     def update_slider(self, value):
+        # aktualisiert die Geschwindigkeit der Simulation
         self.starting_fps = value
           
     
@@ -234,40 +238,49 @@ class Display:
         self.root.destroy()
 
     def far_backward_game(self):
+        # 10 Spiele zurueck
         self.n_game_counter = max(self.n_game_counter-10,0)
         self.n_tick_counter= 0
         self.update_new_game_data()
 
     def backward_game(self):
+        # 1 Spiel zurueck
         self.n_game_counter = max(self.n_game_counter-1,0)
         self.n_tick_counter= 0
         self.update_new_game_data()
 
     def forward_game(self):
+        # 1 Spiel vor
         self.n_game_counter = min(self.n_game_counter+1,self.n_game_counter_array[-1])
         self.n_tick_counter= 0
         self.update_new_game_data()
 
     def far_forward_game(self):
+        # 10 Spiele vor
         self.n_game_counter = min(self.n_game_counter+10,self.n_game_counter_array[-1])
         self.n_tick_counter= 0
         self.update_new_game_data()
         
     def far_backward_tick(self):
+        # 10 Ticks zurueck
         self.n_tick_counter = max(self.n_tick_counter-10,0)
         
     def backward_tick(self):
+        # 1 Tick zurueck
         self.n_tick_counter = max(self.n_tick_counter-1,0)
     
     def forward_tick(self):
+        # 1 Tick vor
         self.n_tick_counter = min(self.n_tick_counter+1,self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"])
         
     def far_forward_tick(self):
+        # 10 Ticks vor
         self.n_tick_counter = min(self.n_tick_counter+10,self.app.all_data[self.n_game_counter]["info_per_tick"][-1]["n_tick_counter"])
                 
 
 
     def update(self):
+        # löst verschiedene Update-Timings aus
         self.update_once_per_sim()
         def my_after():
             if self.app.display_mode:
@@ -284,8 +297,7 @@ class Display:
 
 
     def update_new_game_data(self):
-
-        # draw graphs when new game data is ready        
+        # updates every time new data in all_data is available or with diferrent other triggers        
 
         self.n_game_counter_array = []
         self.calc_duration_array = []
@@ -441,6 +453,7 @@ class Display:
 
 
     def update_every_tick(self):
+        # updates different things on the display every tick
         if self.app.all_data:
             #check if new data in all_data
             if self.cur_all_data_length < len(self.app.all_data):
@@ -523,6 +536,7 @@ class Display:
         
 
     def _from_rgb(self, rgb):
+      # wandelt eine RGB-Tupel in einen Hex-Wert um
       r, g, b = rgb
       return f'#{r:02x}{g:02x}{b:02x}'
 

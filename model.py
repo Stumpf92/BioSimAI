@@ -8,18 +8,20 @@ import os
 import numpy as np
 np.random.seed(settings.SEED)
 from datetime import datetime
+from creature import Plant, Prey, Hunter, Seed
 
 class Linear_QNet(nn.Module):
     def __init__(self, input_size, hidden_size_1, hidden_size_2, hidden_size_3, output_size):
         super().__init__()
-        #### Interessant ist Flattenlayer , weil multifimensionaler Input Möglich wi
+        # definiert die Struktur des neuronalen Netzwerks 
         self.linear1 = nn.Linear(input_size, hidden_size_1)
         self.linear2 = nn.Linear(hidden_size_1, hidden_size_2)
         self.linear3 = nn.Linear(hidden_size_2, hidden_size_3)
         self.linear4 = nn.Linear(hidden_size_3, output_size)
 
         
-    def forward(self, x):
+    def forward(self, x):     
+        # Kernfunktion des NN, Gegenspieler zu Backpropagation   
         x = x.to(settings.DEVICE)
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))

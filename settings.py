@@ -16,9 +16,9 @@ MAX_GAMES_PER_SIMULATION = 1000
 
 MAX_STARTING_TICKS_PER_GAME = 100  # 1000
 MAX_ENDING_TICKS_PER_GAME = 1000
-PLANT_COUNT_START = 30  #30
+PLANT_COUNT_START = 0  #30
 PREY_COUNT_START = 15   # 15
-HUNTER_COUNT_START = 0  #10
+HUNTER_COUNT_START = 10  #10
 SEED_COUNT_START = 0  #3
 
 GRID_WIDTH = 35       #35
@@ -68,6 +68,7 @@ def generate_plant_heritage_stats():
         "min_starting_hp":5,
         "max_starting_hp":50,
         "max_hp":100,
+        "max_global_count": 100,
         "reproduction_threshold": 80,
         "growth_rate": random.randint(80, 105)/100,
         "max_hp_multiplier": 1.1,
@@ -85,7 +86,8 @@ def generate_prey_heritage_stats():
         "generation": 0,
         "min_starting_hp":30,
         "max_starting_hp":120,
-        "max_hp":250,
+        "max_hp":250,        
+        "max_global_count": 50,
         "reproduction_threshold": 230,
         "decay_rate": 0.002,
         "wall_collision_reward_malus": -2, #-2
@@ -109,24 +111,26 @@ def generate_hunter_heritage_stats():
     return {
         "generation": 0,
         "min_starting_hp":80,
-        "max_starting_hp":150,
+        "max_starting_hp":450,
         "max_hp":700,
+        "max_global_count": 15,
         "reproduction_threshold": 600,
         "decay_rate": 0.007,
         "seeding_probability": 0.05,
-        "wall_collision_reward_malus": -100,
-        "friend_collision_reward_malus": -20,
-        "eating_reward_bonus": 400,
+        "wall_collision_reward_malus": -2, #-2
+        "friend_collision_reward_malus": -1, #-0.1
+        "enemy_collision_reward_malus": -5,
+        "eating_reward_bonus": 5,
         "eating_heal": random.randint(30, 55)/100,
         "getting_closer_bonus": 20,
         "terrain_malus_multiplier": 0,
-        "vision_radius": 2,
-        "vision_radius": 1,
+        "vision_radius": 5,
+        "reward_radius": 1,
         "max_memory" :100000,
         "batch_size" :1000,
         "lr" :0.001,
         "gamma" :0.96,
-        "epsilon_decay" :0.999995,
+        "epsilon_decay" :0.999997,
         "min_epsilon" :0.01,
         }
 

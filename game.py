@@ -15,8 +15,8 @@ class Game:
 
 
     def reset(self):
+        # setzt das Spiel wieder auf Start zurück
 
-        # set everthing to start
         self.n_tick_counter = -1
         self.plant_count = 0
         self.prey_count = 0
@@ -60,7 +60,7 @@ class Game:
         for _ in range(settings.HUNTER_COUNT_START):
             Hunter(self.simulation,
                 np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
-                settings.generate_prey_heritage_stats()
+                settings.generate_hunter_heritage_stats()
                 ) 
         for _ in range(settings.SEED_COUNT_START):
             Seed(self.simulation,
@@ -69,6 +69,7 @@ class Game:
                 ) 
 
     def play_step(self):
+        # spielt ein Schritt /Tick im Spiel für jeden Agenten und gibt Werte zurück
         
         self.n_tick_counter += 1
 
@@ -120,6 +121,7 @@ class Game:
                                  self.game_over)
     
     def get_random_free_pos(self, position):
+        # wenn position belget , gibt diese Funktion eine zufällige benachbarte freie Position zurück oder eben None wenn keine Position frei sind.
         directions = [np.array([0, 1]), np.array([0, -1]), np.array([1, 0]), np.array([-1, 0]), np.array([1, 1]), np.array([-1, -1]), np.array([1, -1]), np.array([-1, 1])]
         random.shuffle(directions)
         while len(directions) > 0:

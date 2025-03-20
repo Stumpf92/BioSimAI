@@ -2,7 +2,6 @@ import settings
 import random
 random.seed(settings.SEED)
 import torch
-from torch import nn
 torch.manual_seed(settings.SEED)
 import numpy as np
 np.random.seed(settings.SEED)
@@ -43,7 +42,6 @@ class Agent:
             
         self.memory = deque(maxlen=self.max_memory) # popleft()
         self.model = Linear_QNet((2*self.vision_radius+1)**2, 256, 128, 64, 8).to(settings.DEVICE)
-        # self.model = Linear_QNet(8, 256, 8).cuda()
         self.trainer = QTrainer(self.model, self.lr, self.gamma)
 
         self.epsilon = 1
@@ -51,14 +49,16 @@ class Agent:
 
 
     def get_state(self, danger_matrix):
+        # wandelt 2Dim Bild eines Agenten in Vision Radius in 1Dim Vektor um als Input-Layer
         state = danger_matrix.flatten() 
-        return state       
-        #return np.array(state, dtype=float)
+        return state 
 
     def remember(self, state, action, reward, next_state, done):
+        #speichert  die Daten zu jeder Aktion des Agenten in Memory für Long_term_Training
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
 
     def train_long_memory(self):
+        # trainiert das Model mit random Samples aus der Vergangenheit am Ende jedes Games
         if len(self.memory) > self.batch_size:
             mini_sample = random.sample(self.memory, self.batch_size) # list of tuples
         else:
@@ -67,10 +67,11 @@ class Agent:
         self.trainer.train_step(states, actions, rewards, next_states, dones)
 
     def train_short_memory(self, state, action, reward, next_state, done):
+        # traniert das Model auf dem aktuellen Zustand bei jeder Aktion des Agenten
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-
+        # verringert Epsilon und ermittelt eine Aktion des Agenten
         self.epsilon *= self.epsilon_decay
         self.epsilon = max(self.min_epsilon, self.epsilon)
         final_move = [0,0,0,0,0,0,0,0]

@@ -47,6 +47,7 @@ class Creature:
                 self.game.list_of_hunters.append(self)
     
     def reproduce_check(self):
+        # kontrolliert und löst Vermehrung aus
         if random.random() > math.sqrt(min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)):
             if self.hp >= self.heritage_stats["reproduction_threshold"]:
                 self.hp = random.randint(self.heritage_stats["min_starting_hp"], self.heritage_stats["max_starting_hp"])
@@ -59,6 +60,7 @@ class Creature:
         pass        
 
     def kill_check(self):
+        # kontrolliert und löst Kill aus
         if self.hp <= 0:
             if isinstance(self,Plant):
                 self.game.plantmap_per_tick[self.pos[0],self.pos[1]] = 0
@@ -75,10 +77,26 @@ class Creature:
             del self
 
     def decay(self):
-        self.hp -= self.heritage_stats["decay_rate"]*self.heritage_stats["max_hp"]
+        # reduziert die Creaturen bei überschreiten der maximalen Anzahl "max_global_count"
+        if isinstance(self,Plant):
+            amount = len(self.game.list_of_plants)
+        elif isinstance(self,Prey):
+            amount = len(self.game.list_of_preys)
+        elif isinstance(self,Hunter):
+            amount = len(self.game.list_of_hunters)
+        elif isinstance(self,Seed):
+            amount = len(self.game.list_of_seeds)
+        
+        if amount > self.heritage_stats["max_global_count"]:
+            self.hp -= (((amount - self.heritage_stats["max_global_count"])/self.heritage_stats["max_global_count"])*(self.heritage_stats["max_hp"]))**(1/8)
+
+        # self.hp -= self.heritage_stats["max_hp"]
+        # self.hp -= self.heritage_stats["decay_rate"]*self.heritage_stats["max_hp"]
+
         self.kill_check()
     
     def move_and_or_eat(self, move, food): 
+        # führt Bewegung und ggf das Essen aus
         reward = 0
         if move[0] == 1: 
             vector = np.array([0, -1])            
@@ -136,7 +154,8 @@ class Creature:
                     if random.random() < math.sqrt(min(self.simulation.prey_agent.epsilon, self.simulation.hunter_agent.epsilon)):
                         Prey(self.simulation,
                             np.array([random.randint(0, settings.GRID_WIDTH-1), random.randint(0, settings.GRID_HEIGHT-1)]),
-                            settings.generate_plant_heritage_stats())
+                            settings.generate_prey_heritage_stats())
+                        
                 # target töten
                 food_target.hp = 0
                 food_target.kill_check()  
@@ -190,6 +209,7 @@ class Creature:
         return reward
     
     def seed_check(self):
+        # wenn einer Creature ein Seed anhängt wird hier gecheckt ob der eigentliche Seed spawnen soll
         self.seed_transport_timer += 1
         if self.seed_transport_timer == self.seed_heritage_stats["seed_transport_max_timer"]:
             Seed(self.simulation, self.pos, self.seed_heritage_stats)
@@ -197,6 +217,9 @@ class Creature:
             self.seed_transport_timer = 0
     
     def calc_danger_matrix(self, vision_radius, reward_radius):
+        # vision_matrix = Zeigt die Creatures in der Umgebung(vision_radius) einer Creature in einer Matrix an. 
+        # reward_matrix = zeigt eine Matrix in der Umgebung(reward_radius) um eine Creature mit den Werten der möglichen Belohnungen und Bestrafungen
+        # reward_matrix_sum = Summe der Werte aus reward_ Matrix. Maß dafür ob agent sich in freundlciher oder feindlicher Umgebung befindet
         vision_matrix = np.zeros((vision_radius*2+1,vision_radius*2+1))
         reward_matrix = np.zeros((reward_radius*2+1,reward_radius*2+1))
 
@@ -257,10 +280,12 @@ class Plant(Creature):
         self.food = None
 
     def action(self):
+        # diese Aktionen führt dieser Agent jeden Tick aus
         self.grow()
         self.decay()
     
     def grow(self):
+        # Wachsen, jeden Tick
         self.hp = min(self.hp +self.heritage_stats["growth_rate"], self.heritage_stats["max_hp"])
         self.reproduce_check()
 
@@ -276,13 +301,10 @@ class Prey(Creature):
         self.food = Plant
     
     def action(self): 
+        # diese Aktionen führt dieser Agent jeden Tick aus
         game_over = False ### ACHTUNG, das muss noch überprüft werden
-
         reward = 0
-        ##identify closest target
-        # target = self.detect_nearest_target(Plant)
-        danger_matrix_old, reward_matrix_old, reward_matrix_sum_old = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])
-        
+        danger_matrix_old, reward_matrix_old, reward_matrix_sum_old = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])        
         
         # get old state
         state_old = self.simulation.prey_agent.get_state(danger_matrix_old)
@@ -290,12 +312,16 @@ class Prey(Creature):
         final_move = self.simulation.prey_agent.get_action(state_old)
         #make the move       
         reward += self.move_and_or_eat(final_move, self.food)
-        # get new state
-        danger_matrix_new, reward_matrix_new, reward_matrix_sum_new = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])        
+
+        danger_matrix_new, reward_matrix_new, reward_matrix_sum_new = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])   
+
+        
+        # get new state     
         state_new = self.simulation.prey_agent.get_state(danger_matrix_new)
+
         #train
-        #reward += reward_matrix_sum_new
         self.simulation.prey_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
+
         # remember
         self.simulation.prey_agent.remember(state_old, final_move, reward, state_new, game_over)
 
@@ -315,35 +341,28 @@ class Hunter(Creature):
         self.food = Prey
 
     def action(self): 
+        # diese Aktionen führt dieser Agent jeden Tick aus
         game_over = False ### ACHTUNG, das muss noch überprüft werden
-
         reward = 0
-        ##identify closest target
-        # target = self.detect_nearest_target(Prey)
-        danger_matrix, reward_matrix, reward_matrix_sum = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])
+
+        danger_matrix_old, reward_matrix_old, reward_matrix_sum_old = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])        
+        
         # get old state
-        state_old = self.simulation.hunter_agent.get_state(danger_matrix)
-        # if target !=0:
-        #     distance_before = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
+        state_old = self.simulation.hunter_agent.get_state(danger_matrix_old)
         # get move
         final_move = self.simulation.hunter_agent.get_action(state_old)
         #make the move       
         reward += self.move_and_or_eat(final_move, self.food)
-        # if target !=0:
-        #     distance_after = max(abs(self.pos[0]-target.pos[0]), abs(self.pos[1]-target.pos[1]))
-        #rewarding for moving closer
-        # if target !=0:
-        #     if distance_before > distance_after:
-        #         reward += self.heritage_stats["getting_closer_bonus"]
-        #punish for moving away
-        # else:
-        #     reward += -10
-        # get new state
-        danger_matrix, reward_matrix, reward_matrix_sum = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])
-        state_new = self.simulation.hunter_agent.get_state(danger_matrix)
+
+        danger_matrix_new, reward_matrix_new, reward_matrix_sum_new = self.calc_danger_matrix(self.heritage_stats["vision_radius"], self.heritage_stats["reward_radius"])   
+
+        
+        # get new state     
+        state_new = self.simulation.hunter_agent.get_state(danger_matrix_new)
+
         #train
-        reward += self.hp
         self.simulation.hunter_agent.train_short_memory(state_old, final_move, reward, state_new, game_over)
+        
         # remember
         self.simulation.hunter_agent.remember(state_old, final_move, reward, state_new, game_over)
 
@@ -376,10 +395,12 @@ class Seed():
 
     
     def action(self):
+        # diese Aktionen führt dieser Agent jeden Tick aus
         self.seed_check()
     
 
     def seed_check(self):
+        # checkt ob ein Seed spawnen soll
         self.seed_timer += 1
         if (self.seed_timer >= self.heritage_stats["seed_sprout_max_timer"] and 
             self.game.plantmap_per_tick[self.pos[0],self.pos[1]] == 0 and 
